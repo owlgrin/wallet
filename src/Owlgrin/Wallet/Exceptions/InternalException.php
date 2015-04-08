@@ -5,7 +5,7 @@ class InternalException extends Exception {
 	/**
 	 * Message
 	 */
-	const MESSAGE = 'Something went wrong.';
+	const MESSAGE = 'wallet::responses.message.internal_error';
 
 	/**
 	 * Constructor

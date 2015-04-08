@@ -7,7 +7,7 @@ class CreditLimitException extends Exception {
 	/**
 	 * Message
 	 */
-	const MESSAGE = 'No Credit Left.';
+	const MESSAGE = 'wallet::responses.message.credit_exists';
 
 	/**
 	 * Constructor

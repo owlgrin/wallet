@@ -71,7 +71,7 @@ class DbCreditRepo implements CreditRepo {
 		}
 	}
 
-	public function amountRedeem($userId, $amount)
+	protected function amountRedeem($userId, $amount)
 	{
 		try
 		{
@@ -115,20 +115,6 @@ class DbCreditRepo implements CreditRepo {
 		}
 	}
 
-	public function hasWallet($userId)
-	{
-		try
-		{
-			return $this->db->table(Config::get('wallet::tables.credits'))
-				->where('user_id', $userId)
-				->first();
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-	}
-
 	public function hasCredit($userId)
 	{
 		try
@@ -137,21 +123,6 @@ class DbCreditRepo implements CreditRepo {
 				->where('user_id', $userId)
 				->where('is_discarded', false)
 				->first();
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-	}
-
-	public function discardCredit($userId)
-	{
-		try
-		{
-			return $this->db->table(Config::get('wallet::tables.credits'))
-				->where('user_id', $userId)
-				->where('is_discarded', true)
-				->update('is_discarded', false);
 		}
 		catch(PDOException $e)
 		{
