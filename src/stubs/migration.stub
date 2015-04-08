@@ -12,19 +12,19 @@ class CreateWalletTable extends Migration {
 	 */
 	public function up()
 	{
-		Schema::create('credits', function(Blueprint $table)
+		Schema::create('_wallet_credits', function(Blueprint $table)
 		{
 			$table->increments('id');
 			$table->string('user_id');
 			$table->integer('amount_initial');
 			$table->integer('amount_left');
-			$table->integer('redemption_initial');
-			$table->integer('redemption_left');
+			$table->integer('redemptions_initial');
+			$table->integer('redemptions_left');
 			$table->timestamp('expired_at')->nullable();
 			$table->timestamps();
 		});
 
-		Schema::create('redemptions', function(Blueprint $table)
+		Schema::create('_wallet_redemptions', function(Blueprint $table)
 		{
 			$table->increments('id');
 			$table->string('user_id');
