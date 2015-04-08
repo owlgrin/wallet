@@ -24,7 +24,7 @@ class DbRedemptionRepo implements RedemptionRepo {
 				'invoiced_amount' => $totalAmount
 			]);
 
-			return $this->get($redemptionId);
+			return $this->find($redemptionId);
 		}
 		catch(PDOException $e)
 		{
@@ -32,13 +32,13 @@ class DbRedemptionRepo implements RedemptionRepo {
 		}
 	}
 
-	public function get($redemptionId)
+	public function find($redemptionId)
 	{
 		try
 		{
 			return $this->db->table(Config::get('wallet::tables.redemptions'))
 						->where('id', $redemptionId)
-						->get();
+						->first();
 		}
 		catch(PDOException $e)
 		{
