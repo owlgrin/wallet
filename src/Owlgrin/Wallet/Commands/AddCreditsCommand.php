@@ -41,9 +41,9 @@ class AddCreditsCommand extends Command {
 
 	public function fire()
 	{
-		$redemption = $this->argument('redemption');
 		$user       = $this->argument('user');
 		$credit     = $this->argument('credit');
+		$redemption = $this->argument('redemption');
 
 		$this->creditRepo->add($user, $credit, $redemption);
 	}
