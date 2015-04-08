@@ -45,6 +45,13 @@ class Wallet {
 		return $this->creditRepo->redeem($this->user, $amount);
 	}
 
+	public function canRedeem()
+	{
+		if($this->creditRepo->hasCredit($this->user))
+			return true;
+		return false;
+	}
+
 	public function left()
 	{
 		return $this->creditRepo->left($this->user);
