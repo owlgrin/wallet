@@ -1,0 +1,47 @@
+<?php
+
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
+
+class CreateWalletTable extends Migration {
+
+	/**
+	 * Run the migrations.
+	 *
+	 * @return void
+	 */
+	public function up()
+	{
+		Schema::create('credits', function(Blueprint $table)
+		{
+			$table->increments('id');
+			$table->string('user_id');
+			$table->integer('amount_initial');
+			$table->integer('amount_left');
+			$table->integer('redemption_initial');
+			$table->integer('redemption_left');
+			$table->boolean('is_discarded');
+			$table->timestamps();
+		});
+
+		Schema::create('redemptions', function(Blueprint $table)
+		{
+			$table->increments('id');
+			$table->string('user_id');
+			$table->integer('credit_id');
+			$table->integer('credit_amount');
+			$table->integer('invoiced_amount');
+		});
+	}
+
+	/**
+	 * Reverse the migrations.
+	 *
+	 * @return void
+	 */
+	public function down()
+	{
+		Schema::drop('credits');
+		Schema::drop('redemptions');
+	}
+}
