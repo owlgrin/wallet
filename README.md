@@ -42,7 +42,7 @@ You can initiate wallet by writing
 ```
 Wallet::user($userId)
 ```
-where $userId is the unique id of your user
+where `$userId` is the unique id of your user
 
 Credits
 
@@ -52,8 +52,8 @@ You can add credits of your user
 Wallet::credits($credits, $redemptions)
 ```
 
-where $credits is the amount of credits you want to add for your user
-and $redemptions is number of times you want your user to use these credits
+where `$credits` is the amount of credits you want to add for your user
+and `$redemptions` is number of times you want your user to use these credits
 
 
 Redemptions
@@ -64,7 +64,7 @@ You can redeem the credits by using
 Wallet::redeem($amount)
 ```
 
-where $amount is the requested amount on which you want to access the credit
+where `$amount` is the requested amount on which you want to access the credit
 
 Left Credits
 
@@ -90,6 +90,7 @@ Each of these extend an abstract class `Owlgrin\Wallet\Exceptions\Exception`.
 You can use it like following:
 
 ```php
+
 try
 {
 	Wallet::Redeem(5445);
