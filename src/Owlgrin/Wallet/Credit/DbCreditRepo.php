@@ -106,6 +106,7 @@ class DbCreditRepo implements CreditRepo {
 			return $this->db->table(Config::get('wallet::tables.credits'))
 				->select('amount_left as left', 'id', 'amount_initial', 'amount_left', 'redemption_initial', 'redemption_left')
 				->where('user_id', $userId)
+				->where('is_discarded', false)
 				->first();
 		}
 		catch(PDOException $e)
