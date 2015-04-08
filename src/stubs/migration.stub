@@ -16,8 +16,8 @@ class CreateWalletTable extends Migration {
 		{
 			$table->increments('id');
 			$table->string('user_id');
-			$table->integer('amount_initial');
-			$table->integer('amount_left');
+			$table->decimal('amount_initial', 31, 2);
+			$table->decimal('amount_left', 31, 2);
 			$table->integer('redemption_initial');
 			$table->integer('redemption_left');
 			$table->boolean('is_discarded');
@@ -29,8 +29,8 @@ class CreateWalletTable extends Migration {
 			$table->increments('id');
 			$table->string('user_id');
 			$table->integer('credit_id');
-			$table->integer('credit_amount');
-			$table->integer('invoiced_amount');
+			$table->decimal('credit_amount', 31, 2);
+			$table->decimal('invoiced_amount', 31, 2);
 		});
 	}
 
