@@ -79,18 +79,18 @@ class DbCreditRepo implements CreditRepo {
 
 			$left = $this->left($userId);
 
-			if($left['left'] == $amount or $left['redemption_left'] == 1)
+			if($left['amount_left'] == $amount or $left['redemption_left'] == 1)
 			{
 				$discard = true;
 			}
 
-			if($left['left'] >= $amount)
+			if($left['amount_left'] >= $amount)
 			{
 				return [$amount, $left['id'], $left['redemption_left'], $discard];
 			}
 			else
 			{
-				return [$left['left'], $left['id'], $left['redemption_left'], $discard];
+				return [$left['amount_left'], $left['id'], $left['redemption_left'], $discard = true];
 			}
 		}
 		catch(PDOException $e)
@@ -104,7 +104,7 @@ class DbCreditRepo implements CreditRepo {
 		try
 		{
 			return $this->db->table(Config::get('wallet::tables.credits'))
-				->select('amount_left as left', 'id', 'amount_initial', 'amount_left', 'redemption_initial', 'redemption_left')
+				->select('amount_left', 'id', 'amount_initial', 'redemption_initial', 'redemption_left')
 				->where('user_id', $userId)
 				->where('is_discarded', false)
 				->first();
