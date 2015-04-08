@@ -62,8 +62,8 @@ class WalletTableCommand extends Command {
 	{
 		$stub = file_get_contents(__DIR__.'/../../../stubs/migration.stub');
 
-		$stub = str_replace('credits', Config::get('wallet::tables.credits'), $stub);
-		$stub = str_replace('redemptions', Config::get('wallet::tables.redemptions'), $stub);
+		$stub = str_replace('_wallet_credits', Config::get('wallet::tables.credits'), $stub);
+		$stub = str_replace('_wallet_redemptions', Config::get('wallet::tables.redemptions'), $stub);
 
 		return $stub;
 	}
