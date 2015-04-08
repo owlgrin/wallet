@@ -24,21 +24,7 @@ class DbRedemptionRepo implements RedemptionRepo {
 				'invoiced_amount' => $totalAmount
 			]);
 
-			return $this->find($redemptionId);
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-	}
-
-	public function find($redemptionId)
-	{
-		try
-		{
-			return $this->db->table(Config::get('wallet::tables.redemptions'))
-						->where('id', $redemptionId)
-						->first();
+			return $creditAmount;
 		}
 		catch(PDOException $e)
 		{

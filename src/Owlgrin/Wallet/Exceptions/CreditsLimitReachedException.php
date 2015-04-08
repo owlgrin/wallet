@@ -2,12 +2,12 @@
 
 use Illuminate\Support\MessageBag;
 
-class CreditExistsException extends Exception {
+class CreditsLimitReachedException extends Exception {
 
 	/**
 	 * Message
 	 */
-	const MESSAGE = 'wallet::responses.message.credit_exists';
+	const MESSAGE = 'wallet::exception.message.credits_limit_reached';
 
 	/**
 	 * Constructor

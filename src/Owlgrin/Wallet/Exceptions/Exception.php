@@ -9,7 +9,7 @@ abstract class Exception extends BaseException {
 	/**
 	 * Default message
 	 */
-	const MESSAGE = 'wallet::responses.message.bad_request';
+	const MESSAGE = 'wallet::exception.message.bad_request';
 
 	/**
 	 * Constructor

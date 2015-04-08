@@ -3,6 +3,4 @@
 interface RedemptionRepo
 {
 	public function add($userId, $creditId, $creditAmount, $totalAmount);
-
-	public function find($redemptionId);
 }

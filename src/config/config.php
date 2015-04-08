@@ -13,6 +13,9 @@ return array(
 		 * of our users
 		 */
 		'redemptions' => '_wallet_redemptions'
-	)
+	),
+
+
+	'limit' => 1
 
 );

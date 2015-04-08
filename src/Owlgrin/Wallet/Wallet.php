@@ -15,6 +15,11 @@ class Wallet {
 		$this->creditRepo = $creditRepo;
 	}
 
+	/**
+	 * Initiating the wallet
+	 * @param  [string] $user [unique identifier of the user]
+	 * @return [object]       [object of wallet]
+	 */
 	public function user($user)
 	{
 		$this->user = $user;
@@ -22,32 +27,29 @@ class Wallet {
 		return $this;
 	}
 
+	/**
+	 * [getUser]
+	 * @return [string] [returns user identifier]
+	 */
 	public function getUser()
 	{
 		return $this->user;
 	}
 
-	public function credit($credit, $redemptionCount, $user = null)
+	/**
+	 * adds credits and redemption count of the user
+	 * @param  [type] $credit          [description]
+	 * @param  [type] $redemptionCount [description]
+	 * @return [type]                  [description]
+	 */
+	public function credit($credit, $redemptionCount)
 	{
-		$userId = is_null($user)? $this->user : $user;
-
-		if($this->creditRepo->hasCredit($userId))
-			throw new Exceptions\CreditExistsException;
-
-		$this->creditRepo->add($userId, $credit, $redemptionCount);
+		$this->creditRepo->add($this->user, $credit, $redemptionCount);
 	}
 
 	public function redeem($amount)
 	{
-		if(! $this->creditRepo->hasCredit($this->user))
-				throw new Exceptions\CreditLimitException;
-
 		return $this->creditRepo->redeem($this->user, $amount);
-	}
-
-	public function canRedeem()
-	{
-		return ! is_null($this->creditRepo->hasCredit($this->user));
 	}
 
 	public function left()

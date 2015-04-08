@@ -20,7 +20,7 @@ class CreateWalletTable extends Migration {
 			$table->integer('amount_left');
 			$table->integer('redemption_initial');
 			$table->integer('redemption_left');
-			$table->boolean('is_discarded');
+			$table->timestamp('expired_at')->nullable();
 			$table->timestamps();
 		});
 

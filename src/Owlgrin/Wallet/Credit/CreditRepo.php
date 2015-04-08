@@ -8,8 +8,6 @@ interface CreditRepo {
 
 	public function left($userId);
 
-	public function hasWallet($userId);
-
 	public function hasCredit($userId);
 
 }

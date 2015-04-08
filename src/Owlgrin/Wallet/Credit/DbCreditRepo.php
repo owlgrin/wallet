@@ -16,16 +16,19 @@ class DbCreditRepo implements CreditRepo {
 		$this->redemptionRepo = $redemptionRepo;
 	}
 
-	public function add($userId, $credit, $redemption)
+	public function add($userId, $credit, $redemptionCount)
 	{
+		if(! $this->canCredit($userId)) throw new Exceptions\CreditsLimitReachedException;
+
 		try
 		{
+
 			$this->db->table(Config::get('wallet::tables.credits'))->insert([
 				'user_id'            => $userId,
 				'amount_initial'     => $credit,
 				'amount_left'        => $credit,
-				'redemption_initial' => $redemption,
-				'redemption_left'    => $redemption,
+				'redemptions_initial' => $redemptionCount,
+				'redemptions_left'    => $redemptionCount,
 				'created_at'         => $this->db->raw('now()'),
 				'updated_at'         => $this->db->raw('now()')
 			]);
@@ -36,62 +39,83 @@ class DbCreditRepo implements CreditRepo {
 		}
 	}
 
-	public function redeem($userId, $requestAmount)
+	public function redeem($userId, $requestedAmount)
 	{
+		if( ! $this->hasCredit($userId)) throw new Exceptions\NoCreditsException;
+
 		try
 		{
-			//starting a transition
 			$this->db->beginTransaction();
 
-			//find amount to redeem
-			list($redeemAmount, $creditId, $redemptionLeft, $discard) = $this->amountRedeem($userId, $requestAmount);
+			$credits = $this->findByUser($userId);
 
-			$update = [ 'redemption_left' => $redemptionLeft-1 ];
+			$redeemedAmount = $this->getRedemptionAmount($requestedAmount, $credits['amount_left']);
 
-			if($discard)
-			{
-				$update = array_merge($update, ['is_discarded' => true]);
-			}
+			$this->db->table(Config::get('wallet::tables.credits'))
+				->where('id', $credits['id'])
+				->update([
+					'amount_left' => $credits['amount_left'] - $redeemedAmount,
+					'redemptions_left' => $credits['redemptions_left'] - 1
+				]);
 
-			$update = $this->db->table(Config::get('wallet::tables.credits'))
-						->where('id', $creditId)
-						->decrement('amount_left', $redeemAmount, $update);
+			$this->expireIfExhausted($credits['id']);
 
-			$redemption = $this->redemptionRepo->add($userId, $creditId, $redeemAmount, $requestAmount);
+			$redemed = $this->redemptionRepo->add($userId, $credits['id'], $redeemedAmount, $requestedAmount);
 
 			$this->db->commit();
 
-			return $redemption;
+			return $redemed;
 		}
 		catch(PDOException $e)
 		{
 			$this->db->rollback();
-
 			throw new Exceptions\InternalException;
 		}
 	}
 
-	protected function amountRedeem($userId, $amount)
+	private function getRedemptionAmount($requestedAmount, $amountLeft)
+	{
+		if($amountLeft >= $requestedAmount)
+		{
+			return $requestedAmount;
+		}
+		else
+		{
+			return $amountLeft;
+		}
+	}
+
+	private function expireIfExhausted($creditId)
 	{
 		try
 		{
-			$discard = false;
+			// update table where id = $creditId and (amount_left = 0 or redemptions_left = 0) set expired_at = now();
+			$this->db->table(Config::get('wallet::tables.credits'))
+				->where('id', $creditId)
+				->where(function($query)
+	            {
+	                $query->where('redemptions_left', 0)
+	                      ->orWhere('amount_left', 0);
+	            })
+				->update([
+					'expired_at' => $this->db->raw('now()')
+				]);
+		}
+		catch(PDOException $e)
+		{
+			throw new Exceptions\InternalException;
+		}
+	}
 
-			$left = $this->left($userId);
-
-			if($left['amount_left'] == $amount or $left['redemption_left'] == 1)
-			{
-				$discard = true;
-			}
-
-			if($left['amount_left'] >= $amount)
-			{
-				return [$amount, $left['id'], $left['redemption_left'], $discard];
-			}
-			else
-			{
-				return [$left['amount_left'], $left['id'], $left['redemption_left'], $discard = true];
-			}
+	public function findByUser($userId)
+	{
+		try
+		{
+			return $this->db->table(Config::get('wallet::tables.credits'))
+				->select('amount_left', 'id', 'amount_initial', 'redemptions_initial', 'redemptions_left')
+				->where('user_id', $userId)
+				->where('expired_at', null)
+				->first();
 		}
 		catch(PDOException $e)
 		{
@@ -104,10 +128,9 @@ class DbCreditRepo implements CreditRepo {
 		try
 		{
 			return $this->db->table(Config::get('wallet::tables.credits'))
-				->select('amount_left', 'id', 'amount_initial', 'redemption_initial', 'redemption_left')
 				->where('user_id', $userId)
-				->where('is_discarded', false)
-				->first();
+				->where('expired_at', null)
+				->sum('amount_left');
 		}
 		catch(PDOException $e)
 		{
@@ -121,8 +144,23 @@ class DbCreditRepo implements CreditRepo {
 		{
 			return $this->db->table(Config::get('wallet::tables.credits'))
 				->where('user_id', $userId)
-				->where('is_discarded', false)
-				->first();
+				->where('expired_at', null)
+				->count() > 0;
+		}
+		catch(PDOException $e)
+		{
+			throw new Exceptions\InternalException;
+		}
+	}
+
+	public function canCredit($userId)
+	{
+		try
+		{
+			return $this->db->table(Config::get('wallet::tables.credits'))
+				->where('user_id', $userId)
+				->where('expired_at', null)
+				->count() < Config::get('wallet::limit');
 		}
 		catch(PDOException $e)
 		{
