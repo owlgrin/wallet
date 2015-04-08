@@ -47,9 +47,7 @@ class Wallet {
 
 	public function canRedeem()
 	{
-		if($this->creditRepo->hasCredit($this->user))
-			return true;
-		return false;
+		return is_null($this->creditRepo->hasCredit($this->user));
 	}
 
 	public function left()
