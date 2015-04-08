@@ -57,4 +57,9 @@ class Wallet {
 		return $this->creditRepo->left($this->user);
 	}
 
+	public function findByUser()
+	{
+		return $this->creditRepo->findByUser($this->user);
+	}
+
 }
