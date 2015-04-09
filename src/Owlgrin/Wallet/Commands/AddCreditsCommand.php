@@ -4,7 +4,8 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-use Owlgrin\Wallet\Credit\CreditRepo;
+use Owlgrin\Wallet\Exceptions;
+use Wallet;
 
 /**
  * Command to generate the required migration
@@ -25,7 +26,6 @@ class AddCreditsCommand extends Command {
 	 */
 	protected $description = 'This command adds credits for user.';
 
-	protected $creditRepo;
 
 	/**
 	 * Execute the console command.
@@ -33,19 +33,36 @@ class AddCreditsCommand extends Command {
 	 * @return void
 	 */
 
-	public function __construct(CreditRepo $creditRepo)
+	public function __construct()
 	{
  		parent::__construct();
- 		$this->creditRepo = $creditRepo;
 	}
 
 	public function fire()
 	{
-		$user       = $this->argument('user');
-		$credit     = $this->argument('credit');
-		$redemption = $this->argument('redemption');
+		try
+		{
+			$user       = $this->argument('user');
+			$credit     = $this->argument('credit');
+			$redemption = $this->argument('redemption');
 
-		$this->creditRepo->add($user, $credit, $redemption);
+			Wallet::user($user)->credit($credit, $redemption);
+
+			$this->info("Your user (". $user .") has been credited with amount (" .$credit. ") with redemptions (" .$redemption. ")");
+		}
+		catch(Exceptions\CreditsLimitReachedExcetion $e)
+		{
+			$this->error($e->getMessage());
+		}
+		catch(Exceptions\InternalExcetion $e)
+		{
+			$this->error($e->getMessage());
+		}
+		catch(\Exception $e)
+		{
+			$this->error($e->getMessage());
+		}
+
 	}
 
 	protected function getArguments()

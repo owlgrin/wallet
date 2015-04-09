@@ -28,7 +28,6 @@ class Wallet {
 	}
 
 	/**
-	 * [getUser]
 	 * @return [string] [returns user identifier]
 	 */
 	public function getUser()
@@ -38,25 +37,35 @@ class Wallet {
 
 	/**
 	 * adds credits and redemption count of the user
-	 * @param  [type] $credit          [description]
-	 * @param  [type] $redemptionCount [description]
-	 * @return [type]                  [description]
+	 * @param  [integer] $credit          [description]
+	 * @param  [integer] $redemptionCount [description]
 	 */
 	public function credit($credit, $redemptionCount)
 	{
 		$this->creditRepo->add($this->user, $credit, $redemptionCount);
 	}
 
+	/**
+	 * redeems the amount
+	 * @param  [integer] $amount [inputs the amount]
+	 * @return the credited amount
+	 */
 	public function redeem($amount)
 	{
 		return $this->creditRepo->redeem($this->user, $amount);
 	}
 
+	/**
+	 * @return [integer|null] [returns amount left in of the user]
+	 */
 	public function left()
 	{
 		return $this->creditRepo->left($this->user);
 	}
 
+	/**
+	 * @return [details of the user]
+	 */
 	public function findByUser()
 	{
 		return $this->creditRepo->findByUser($this->user);
