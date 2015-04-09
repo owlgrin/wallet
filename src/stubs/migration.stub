@@ -41,7 +41,7 @@ class CreateWalletTable extends Migration {
 	 */
 	public function down()
 	{
-		Schema::drop('credits');
-		Schema::drop('redemptions');
+		Schema::drop('_wallet_credits');
+		Schema::drop('_wallet_redemptions');
 	}
 }
