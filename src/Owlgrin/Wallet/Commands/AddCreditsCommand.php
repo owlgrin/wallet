@@ -5,6 +5,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
 use Owlgrin\Wallet\Credit\CreditRepo;
+use Owlgrin\Wallet\Exceptions;
 use Wallet;
 
 /**
@@ -42,13 +43,30 @@ class AddCreditsCommand extends Command {
 
 	public function fire()
 	{
-		$redemption = $this->argument('redemption');
-		$user       = $this->argument('user');
-		$credit     = $this->argument('credit');
+		try
+		{
 
-		Wallet::user($user)->credit($credit, $redemption);
+			$redemption = $this->argument('redemption');
+			$user       = $this->argument('user');
+			$credit     = $this->argument('credit');
 
-		$this->info("Your user (". $user .") has been credited with amount (" .$credit. ") with redemptions (" .$redemption. ")");
+			Wallet::user($user)->credit($credit, $redemption);
+
+			$this->info("Your user (". $user .") has been credited with amount (" .$credit. ") with redemptions (" .$redemption. ")");
+		}
+		catch(Exceptions\CreditsLimitReachedExcetion $e)
+		{
+			$this->error($e->getMessage());
+		}
+		catch(Exceptions\InternalExcetion $e)
+		{
+			$this->error($e->getMessage());
+		}
+		catch(\Exception $e)
+		{
+			$this->error($e->getMessage());
+		}
+
 	}
 
 	protected function getArguments()
