@@ -5,6 +5,7 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
 use Owlgrin\Wallet\Credit\CreditRepo;
+use Wallet;
 
 /**
  * Command to generate the required migration
@@ -45,7 +46,9 @@ class AddCreditsCommand extends Command {
 		$user       = $this->argument('user');
 		$credit     = $this->argument('credit');
 
-		$this->creditRepo->add($user, $credit, $redemption);
+		Wallet::user($user)->credit($credit, $redemption);
+
+		$this->info("Your user (". $user .") has been credited with amount (" .$credit. ") with redemptions (" .$redemption. ")");
 	}
 
 	protected function getArguments()
