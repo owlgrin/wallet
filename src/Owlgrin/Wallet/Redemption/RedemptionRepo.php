@@ -1,6 +1,6 @@
 <?php namespace Owlgrin\Wallet\Redemption;
 
-interface RedemptionRepo
-{
-	public function add($userId, $creditId, $creditAmount, $totalAmount);
+interface RedemptionRepo {
+	public function redeem($userId, $requestedAmount);
+
 }

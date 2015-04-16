@@ -3,15 +3,18 @@
 /**
  * The Wallet core
  */
+use Owlgrin\Wallet\Redemption\RedemptionRepo;
 use Owlgrin\Wallet\Credit\CreditRepo;
 use Owlgrin\Wallet\Exceptions;
 
 class Wallet {
 
+	protected $redemptionRepo;
 	protected $creditRepo;
 
-	public function __construct(CreditRepo $creditRepo)
+	public function __construct(RedemptionRepo $redemptionRepo, CreditRepo $creditRepo)
 	{
+		$this->redemptionRepo = $redemptionRepo;
 		$this->creditRepo = $creditRepo;
 	}
 
@@ -35,15 +38,6 @@ class Wallet {
 		return $this->user;
 	}
 
-	/**
-	 * adds credits and redemption count of the user
-	 * @param  [integer] $credit          [description]
-	 * @param  [integer] $redemptionCount [description]
-	 */
-	public function credit($credit, $redemptionCount)
-	{
-		$this->creditRepo->add($this->user, $credit, $redemptionCount);
-	}
 
 	/**
 	 * redeems the amount
@@ -52,7 +46,7 @@ class Wallet {
 	 */
 	public function redeem($amount)
 	{
-		return $this->creditRepo->redeem($this->user, $amount);
+		return $this->redemptionRepo->redeem($this->user, $amount);
 	}
 
 	/**
@@ -71,4 +65,8 @@ class Wallet {
 		return $this->creditRepo->findByUser($this->user);
 	}
 
+	public function credit($coupon)
+	{
+		$this->creditRepo->apply($this->user, $coupon);
+	}
 }
