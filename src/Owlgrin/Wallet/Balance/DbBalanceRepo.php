@@ -13,7 +13,7 @@ class DbBalanceRepo implements BalanceRepo {
 		$this->db = $db;
 	}
 
-	//add nbalances to the user
+	//add balances to the user
 	public function add($userId, $coupon)
 	{
 		try
@@ -40,32 +40,23 @@ class DbBalanceRepo implements BalanceRepo {
 			//find if balance exists for user
 			$balance = $this->findByUser($userId);
 
-			if($balance)
+			//check if we will make a fresh entry of the amount and redemption
+			//or we will just sum up the amount and redemptions with old one
+			if(($balance['amount'] > 0) and ($balance['redemptions'] > 0) and is_null($balance['expired_at']))
 			{
-				//check if we will make a fresh entry of the amount and redemption
-				//or we will just sum up the amount and redemptions with old one
-				if(($balance['amount'] > 0) and ($balance['redemptions'] > 0) and is_null($balance['expired_at']))
-				{
-					$newAmount = $balance['amount'] + $coupon['amount'];
-					$newRedemptions = $balance['redemptions'] + $coupon['amount_redemptions'];
-				}
-				else
-				{
-					$newAmount = $coupon['amount'];
-					$newRedemptions = $coupon['amount_redemptions'];
-				}
-
-				//updating the balances of the user while crediting
-				$this->updateOnCredit($balance['id'], $newAmount, $newRedemptions);
-
-				$balanceId = $balance['id'];
+				$newAmount = $balance['amount'] + $coupon['amount'];
+				$newRedemptions = $balance['redemptions'] + $coupon['amount_redemptions'];
 			}
 			else
 			{
-				$balanceId = $this->add($userId, $coupon);
+				$newAmount = $coupon['amount'];
+				$newRedemptions = $coupon['amount_redemptions'];
 			}
 
-			return $balanceId;
+			//updating the balances of the user while crediting
+			$this->updateOnCredit($balance['id'], $newAmount, $newRedemptions);
+
+			return $balance['id'];
 		}
 		catch(PDOException $e)
 		{
@@ -157,5 +148,15 @@ class DbBalanceRepo implements BalanceRepo {
 		{
 			throw new Exceptions\InternalException;
 		}
+	}
+
+	public function addBlank($userId)
+	{
+		$coupon = [
+			'amount'      => 0,
+			'redemptions' => 0
+		];
+
+		$this->add($userId, $coupon);
 	}
 }

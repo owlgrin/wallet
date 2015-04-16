@@ -14,7 +14,7 @@ class DbCreditRepo implements CreditRepo {
 	protected $balanceRepo;
 	protected $transactionRepo;
 
-	public static ACTION_CREDIT = 'credit';
+	const ACTION_CREDIT = 'credit';
 
 	public function __construct(Database $db,
 		CouponRepo $couponRepo,
@@ -25,6 +25,11 @@ class DbCreditRepo implements CreditRepo {
 		$this->couponRepo = $couponRepo;
 		$this->balanceRepo = $balanceRepo;
 		$this->transactionRepo = $transactionRepo;
+	}
+
+	public function blank($userId)
+	{
+		$this->balanceRepo->addBlank($userId);
 	}
 
 	public function apply($userId, $couponIdentifier)

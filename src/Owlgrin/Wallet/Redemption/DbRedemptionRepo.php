@@ -12,7 +12,7 @@ class DbRedemptionRepo implements RedemptionRepo {
 	protected $balanceRepo;
 	protected $transactionRepo;
 
-	public static ACTION_DEBIT = 'debit';
+	const ACTION_DEBIT = 'debit';
 
 	public function __construct(Database $db, BalanceRepo $balanceRepo, TransactionRepo $transactionRepo)
 	{

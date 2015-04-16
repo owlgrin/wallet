@@ -38,6 +38,13 @@ class Wallet {
 		return $this->user;
 	}
 
+	/**
+	 * add balnk credit for the user
+	 */
+	public function blankCredit()
+	{
+		$this->creditRepo->blank($this->user);
+	}
 
 	/**
 	 * redeems the amount
@@ -69,4 +76,5 @@ class Wallet {
 	{
 		$this->creditRepo->apply($this->user, $coupon);
 	}
+
 }
