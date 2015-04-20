@@ -72,6 +72,11 @@ class Wallet {
 		return $this->creditRepo->findByUser($this->user);
 	}
 
+	/**
+	 * credits a coupon for the user
+	 * @param  [string] $coupon [identifier of the coupon]
+	 * @return void
+	 */
 	public function credit($coupon)
 	{
 		$this->creditRepo->apply($this->user, $coupon);
