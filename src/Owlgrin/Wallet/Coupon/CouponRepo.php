@@ -6,8 +6,6 @@ interface CouponRepo {
 
 	public function addMultiple($coupons);
 
-	public function findByIdentifier($couponIdentifier);
-
 	public function storeForUser($userId, $couponId);
 
 	public function canBeUsed($couponIdentifier);

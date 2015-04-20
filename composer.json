@@ -13,7 +13,7 @@
     },
     "autoload": {
         "classmap": [
-            "src/migrations"
+            "tests/TestCase.php"
         ],
         "psr-0": {
             "Owlgrin\\Wallet\\": "src/"

@@ -2,7 +2,7 @@
 
 interface BalanceRepo {
 
-	public function add($userId, $coupon);
+	public function add($userId, $amount, $redemptions);
 
 	public function credit($userId, $coupon);
 

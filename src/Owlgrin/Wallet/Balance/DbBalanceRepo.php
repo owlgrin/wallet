@@ -2,6 +2,8 @@
 
 use Illuminate\Database\DatabaseManager as Database;
 
+use Owlgrin\Wallet\Exceptions;
+
 use PDOException, Exception, Config;
 
 class DbBalanceRepo implements BalanceRepo {
@@ -14,14 +16,14 @@ class DbBalanceRepo implements BalanceRepo {
 	}
 
 	//add balances to the user
-	public function add($userId, $coupon)
+	public function add($userId, $amount, $redemptions)
 	{
 		try
 		{
 			return $this->db->table(Config::get('wallet::tables.balances'))->insertGetId([
 				'user_id'     => $userId,
-				'amount'      => $coupon['amount'],
-				'redemptions' => $coupon['amount_redemptions'],
+				'amount'      => $amount,
+				'redemptions' => $redemptions,
 				'expired_at'  => null,
 				'created_at'  => $this->db->raw('now()'),
 				'updated_at'  => $this->db->raw('now()')
@@ -152,11 +154,6 @@ class DbBalanceRepo implements BalanceRepo {
 
 	public function addBlank($userId)
 	{
-		$coupon = [
-			'amount'      => 0,
-			'redemptions' => 0
-		];
-
-		$this->add($userId, $coupon);
+		return $this->add($userId, $amount = 0, $redemptions = 0);
 	}
 }

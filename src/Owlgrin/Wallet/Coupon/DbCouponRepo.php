@@ -49,22 +49,6 @@ class DbCouponRepo implements CouponRepo {
 
 	}
 
-	//find the coupon by identifier
-	public function findByIdentifier($couponIdentifier)
-	{
-		try
-		{
-			return $this->db->table(Config::get('wallet::tables.coupons'))
-				->where('identifier', $couponIdentifier)
-				->where('redemptions', '>', 0)
-				->first();
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-	}
-
 	// add coupon for user
 	public function storeForUser($userId, $couponId)
 	{

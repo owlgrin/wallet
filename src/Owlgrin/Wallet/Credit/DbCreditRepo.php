@@ -34,16 +34,15 @@ class DbCreditRepo implements CreditRepo {
 
 	public function apply($userId, $couponIdentifier)
 	{
+		$coupon = $this->couponRepo->canBeUsed($couponIdentifier);
+
 		//checking if the coupon has credit
-		if(! $this->couponRepo->canBeUsed($couponIdentifier)) throw new Exceptions\CouponLimitReachedException;
+		if(! $coupon) throw new Exceptions\CouponLimitReachedException;
 
 		try
 		{
 			//starting the transaction
 			$this->db->beginTransaction();
-
-			// find the details of the coupon
-			$coupon = $this->couponRepo->findByIdentifier($couponIdentifier);
 
 			// entry of the coupon for the user
 			$this->couponRepo->storeForUser($userId, $coupon['id']);
