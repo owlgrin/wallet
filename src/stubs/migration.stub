@@ -35,6 +35,7 @@ class CreateWalletTable extends Migration {
 			$table->increments('id');
 			$table->string('name');
 			$table->string('identifier');
+			$table->string('description');
 			$table->integer('amount');
 			$table->integer('amount_redemptions');
 			$table->integer('redemptions');

@@ -14,6 +14,7 @@ class CouponTest extends TestCase {
         $coupon = [
             'name' => 'fresh Coupon',
             'identifier' => 'freshCoupon',
+            'description' => 'Weel this is the description of the coupon',
             'amount' => 500,
             'amount_redemptions' => 5,
             'redemptions' => 3
@@ -26,6 +27,7 @@ class CouponTest extends TestCase {
         $query->shouldReceive('insert')->with([
             'name'               => $coupon['name'],
             'identifier'         => $coupon['identifier'],
+            'description'        => $coupon['description'],
             'amount'             => $coupon['amount'],
             'amount_redemptions' => $coupon['amount_redemptions'],
             'redemptions'        => $coupon['redemptions']
@@ -93,7 +95,7 @@ class CouponTest extends TestCase {
 
         $db->shouldReceive('table')->with(Config::get('wallet::tables.coupons'))->andReturn($query = Mockery::mock('stdClass'));
         $query->shouldReceive('where')->with('identifier', $couponIdentifier)->andReturn($query);
-        $query->shouldReceive('where')->with('redemptions', '>', 0)->andReturn($query);
+        $query->shouldReceive('where')->with('redemptions', '!=', 0)->andReturn($query);
         $query->shouldReceive('first')->andReturn('coupon');
 
         $couponRepo = new Owlgrin\Wallet\Coupon\DbCouponRepo($db);

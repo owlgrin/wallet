@@ -21,6 +21,7 @@ class DbCouponRepo implements CouponRepo {
 			$this->db->table(Config::get('wallet::tables.coupons'))->insert([
 				'name'               => $coupon['name'],
 				'identifier'         => $coupon['identifier'],
+				'description'		 => $coupon['description'],
 				'amount'             => $coupon['amount'],
 				'amount_redemptions' => $coupon['amount_redemptions'],
 				'redemptions'        => $coupon['redemptions']
@@ -66,6 +67,22 @@ class DbCouponRepo implements CouponRepo {
 		}
 	}
 
+	public function findByUser($userId)
+	{
+		try
+		{
+			return $this->db->table(Config::get('wallet::tables.user_coupons').' AS uc')
+				->join(Config::get('wallet::tables.coupons').' AS c', 'c.id', '=', 'uc.coupon_id')
+				->select('c.name', 'c.identifier', 'c.description', 'c.amount', 'c.amount_redemptions')
+				->where('uc.user_id', $userId)
+				->get();
+		}
+		catch(PDOException $e)
+		{
+			throw new Exceptions\InternalException;
+		}
+	}
+
 	//check coupon could be used
 	public function canBeUsed($couponIdentifier)
 	{
@@ -73,7 +90,12 @@ class DbCouponRepo implements CouponRepo {
 		{
 			return $this->db->table(Config::get('wallet::tables.coupons'))
 				->where('identifier', $couponIdentifier)
-				->where('redemptions', '>', 0)
+				// ->where(function($query)
+	   //          {
+	   //              $query->where('redemptions', '>', 0)
+	   //                    ->orWhere('redemptions', '=', -1);
+	   //          })
+	   			->where('redemptions', '!=', 0)
 				->first();
 		}
 		catch(PDOException $e)

@@ -31,4 +31,20 @@ class DbTransactionRepo implements TransactionRepo {
 		}
 	}
 
+	public function findByUser($userId)
+	{
+		try
+		{
+			return $this->db->table(Config::get('wallet::tables.transactions').' AS t')
+				->join(Config::get('wallet::tables.balances').' AS b', 'b.id', '=', 't.balance_id')
+				->select('t.amount', 't.direction')
+				->where('b.user_id', $userId)
+				->get();
+		}
+		catch(PDOException $e)
+		{
+			throw new Exceptions\InternalException;
+		}
+	}
+
 }
