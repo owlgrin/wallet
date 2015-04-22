@@ -12,26 +12,43 @@ class CreateWalletTable extends Migration {
 	 */
 	public function up()
 	{
-		Schema::create('_wallet_credits', function(Blueprint $table)
+		Schema::create('_wallet_balances', function(Blueprint $table)
 		{
 			$table->increments('id');
 			$table->string('user_id');
-			$table->integer('amount_initial');
-			$table->integer('amount_left');
-			$table->integer('redemptions_initial');
-			$table->integer('redemptions_left');
+			$table->integer('amount');
+			$table->integer('redemptions');
 			$table->timestamp('expired_at')->nullable();
 			$table->timestamps();
 		});
 
-		Schema::create('_wallet_redemptions', function(Blueprint $table)
+		Schema::create('_wallet_transactions', function(Blueprint $table)
+		{
+			$table->increments('id');
+			$table->integer('balance_id');
+			$table->integer('amount');
+			$table->enum('direction', ['credit', 'debit']);
+		});
+
+		Schema::create('_wallet_coupons', function(Blueprint $table)
+		{
+			$table->increments('id');
+			$table->string('name');
+			$table->string('identifier');
+			$table->string('description');
+			$table->integer('amount');
+			$table->integer('amount_redemptions');
+			$table->integer('redemptions');
+		});
+
+		Schema::create('_wallet_user_coupons', function(Blueprint $table)
 		{
 			$table->increments('id');
 			$table->string('user_id');
-			$table->integer('credit_id');
-			$table->integer('credit_amount');
-			$table->integer('invoiced_amount');
+			$table->integer('coupon_id');
+			$table->timestamp('created_at');
 		});
+
 	}
 
 	/**
@@ -41,7 +58,9 @@ class CreateWalletTable extends Migration {
 	 */
 	public function down()
 	{
-		Schema::drop('_wallet_credits');
-		Schema::drop('_wallet_redemptions');
+		Schema::drop('_wallet_balances');
+		Schema::drop('_wallet_transactions');
+		Schema::drop('_wallet_user_coupons');
+		Schema::drop('_wallet_coupons');
 	}
 }

@@ -3,16 +3,25 @@
 /**
  * The Wallet core
  */
+use Owlgrin\Wallet\Redemption\RedemptionRepo;
 use Owlgrin\Wallet\Credit\CreditRepo;
+use Owlgrin\Wallet\Coupon\CouponRepo;
+use Owlgrin\Wallet\Transaction\TransactionRepo;
 use Owlgrin\Wallet\Exceptions;
 
 class Wallet {
 
+	protected $redemptionRepo;
 	protected $creditRepo;
+	protected $couponRepo;
+	protected $transactionRepo;
 
-	public function __construct(CreditRepo $creditRepo)
+	public function __construct(RedemptionRepo $redemptionRepo, CreditRepo $creditRepo, CouponRepo $couponRepo, TransactionRepo $transactionRepo)
 	{
-		$this->creditRepo = $creditRepo;
+		$this->redemptionRepo  = $redemptionRepo;
+		$this->creditRepo      = $creditRepo;
+		$this->couponRepo      = $couponRepo;
+		$this->transactionRepo = $transactionRepo;
 	}
 
 	/**
@@ -36,13 +45,11 @@ class Wallet {
 	}
 
 	/**
-	 * adds credits and redemption count of the user
-	 * @param  [integer] $credit          [description]
-	 * @param  [integer] $redemptionCount [description]
+	 * add balnk credit for the user
 	 */
-	public function credit($credit, $redemptionCount)
+	public function blankCredit()
 	{
-		$this->creditRepo->add($this->user, $credit, $redemptionCount);
+		$this->creditRepo->blank($this->user);
 	}
 
 	/**
@@ -52,7 +59,7 @@ class Wallet {
 	 */
 	public function redeem($amount)
 	{
-		return $this->creditRepo->redeem($this->user, $amount);
+		return $this->redemptionRepo->redeem($this->user, $amount);
 	}
 
 	/**
@@ -69,6 +76,55 @@ class Wallet {
 	public function findByUser()
 	{
 		return $this->creditRepo->findByUser($this->user);
+	}
+
+	/**
+	 * credits a coupon for the user
+	 * @param  [string] $coupon [identifier of the coupon]
+	 * @return void
+	 */
+	public function credit($coupon)
+	{
+		$this->creditRepo->apply($this->user, $coupon);
+	}
+
+	/**
+	 * add the new coupon
+	 * @param  array  $coupon [contains details of the coupon]
+	 * @return null
+	 */
+	public function coupon($coupon)
+	{
+		$this->couponRepo->add($coupon);
+	}
+
+	/**
+	 * find if the coupon could be used
+	 * @param  string $coupon accepts coupon identifier
+	 * @return null if coupon is expired or invalid
+	 * @return detail of the coupon if valid
+	 */
+	public function findCoupon($coupon)
+	{
+		return $this->couponRepo->canBeUsed($coupon);
+	}
+
+	/**
+	 * find the transactions which has been done by user
+	 * @return list of transactions containing amount and direction
+	 */
+	public function transactions()
+	{
+		return $this->transactionRepo->findByUser($this->user);
+	}
+
+	/**
+	 * [returns all the coupons applied by the user]
+	 * @return list of all the coupons
+	 */
+	public function userCoupons()
+	{
+		return $this->couponRepo->findByUser($this->user);
 	}
 
 }

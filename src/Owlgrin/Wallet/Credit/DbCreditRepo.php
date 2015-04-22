@@ -1,170 +1,79 @@
 <?php namespace Owlgrin\Wallet\Credit;
 
 use Illuminate\Database\DatabaseManager as Database;
-use Owlgrin\Wallet\Exceptions;
-use Owlgrin\Wallet\Redemption\RedemptionRepo;
 
-use PDOException, Exception, Config;
+use Owlgrin\Wallet\Exceptions;
+use Owlgrin\Wallet\Coupon\CouponRepo;
+use Owlgrin\Wallet\Balance\BalanceRepo;
+use Owlgrin\Wallet\Transaction\TransactionRepo;
 
 class DbCreditRepo implements CreditRepo {
 
 	protected $db;
+	protected $couponRepo;
+	protected $balanceRepo;
+	protected $transactionRepo;
 
-	public function __construct(Database $db, RedemptionRepo $redemptionRepo)
+	const ACTION_CREDIT = 'credit';
+
+	public function __construct(Database $db,
+		CouponRepo $couponRepo,
+		BalanceRepo $balanceRepo,
+		TransactionRepo $transactionRepo)
 	{
 		$this->db = $db;
-		$this->redemptionRepo = $redemptionRepo;
+		$this->couponRepo = $couponRepo;
+		$this->balanceRepo = $balanceRepo;
+		$this->transactionRepo = $transactionRepo;
 	}
 
-	public function add($userId, $credit, $redemptionCount)
+	public function blank($userId)
 	{
-		if(! $this->canCredit($userId)) throw new Exceptions\CreditsLimitReachedException;
+		$this->balanceRepo->addBlank($userId);
+	}
+
+	public function apply($userId, $couponIdentifier)
+	{
+		$coupon = $this->couponRepo->canBeUsed($couponIdentifier);
+
+		//checking if the coupon has credit
+		if(! $coupon) throw new Exceptions\CouponLimitReachedException;
 
 		try
 		{
-
-			$this->db->table(Config::get('wallet::tables.credits'))->insert([
-				'user_id'            => $userId,
-				'amount_initial'     => $credit,
-				'amount_left'        => $credit,
-				'redemptions_initial' => $redemptionCount,
-				'redemptions_left'    => $redemptionCount,
-				'created_at'         => $this->db->raw('now()'),
-				'updated_at'         => $this->db->raw('now()')
-			]);
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-	}
-
-	public function redeem($userId, $requestedAmount)
-	{
-		if( ! $this->hasCredit($userId)) throw new Exceptions\NoCreditsException;
-
-		try
-		{
+			//starting the transaction
 			$this->db->beginTransaction();
 
-			$credits = $this->findByUser($userId);
+			// entry of the coupon for the user
+			$this->couponRepo->storeForUser($userId, $coupon['id']);
 
-			$redeemedAmount = $this->getRedemptionAmount($requestedAmount, $credits['amount_left']);
+			//adding balance for the user
+			$balanceId = $this->balanceRepo->credit($userId, $coupon);
 
-			$this->db->table(Config::get('wallet::tables.credits'))
-				->where('id', $credits['id'])
-				->update([
-					'amount_left' => $credits['amount_left'] - $redeemedAmount,
-					'redemptions_left' => $credits['redemptions_left'] - 1
-				]);
+			//entry of the credit in transaction table
+			$this->transactionRepo->add($balanceId, $coupon['amount'], self::ACTION_CREDIT);
 
-			$this->expireIfExhausted($credits['id']);
-
-			$redemed = $this->redemptionRepo->add($userId, $credits['id'], $redeemedAmount, $requestedAmount);
+			// finally decrementing the redemptions of coupons table
+			$this->couponRepo->decrementRedemptions($coupon['id']);
 
 			$this->db->commit();
-
-			return $redemed;
 		}
-		catch(PDOException $e)
+		catch(Exceptions\InternalException $e)
 		{
 			$this->db->rollback();
+
 			throw new Exceptions\InternalException;
 		}
 	}
 
-	private function getRedemptionAmount($requestedAmount, $amountLeft)
+	//find the left balance of the user
+	public function left($userId)
 	{
-		if($amountLeft >= $requestedAmount)
-		{
-			return $requestedAmount;
-		}
-		else
-		{
-			return $amountLeft;
-		}
-	}
-
-	private function expireIfExhausted($creditId)
-	{
-		try
-		{
-			// update table where id = $creditId and (amount_left = 0 or redemptions_left = 0) set expired_at = now();
-			$this->db->table(Config::get('wallet::tables.credits'))
-				->where('id', $creditId)
-				->where(function($query)
-	            {
-	                $query->where('redemptions_left', 0)
-	                      ->orWhere('amount_left', 0);
-	            })
-				->update([
-					'expired_at' => $this->db->raw('now()')
-				]);
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
+		return $this->balanceRepo->left($userId);
 	}
 
 	public function findByUser($userId)
 	{
-		try
-		{
-			return $this->db->table(Config::get('wallet::tables.credits'))
-				->select('amount_left', 'id', 'amount_initial', 'redemptions_initial', 'redemptions_left')
-				->where('user_id', $userId)
-				->where('expired_at', null)
-				->first();
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-	}
-
-	public function left($userId)
-	{
-		try
-		{
-			return $this->db->table(Config::get('wallet::tables.credits'))
-				->where('user_id', $userId)
-				->where('expired_at', null)
-				->sum('amount_left');
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-	}
-
-	public function hasCredit($userId)
-	{
-		try
-		{
-			return $this->db->table(Config::get('wallet::tables.credits'))
-				->where('user_id', $userId)
-				->where('expired_at', null)
-				->count() > 0;
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-	}
-
-	public function canCredit($userId)
-	{
-		try
-		{
-			return $this->db->table(Config::get('wallet::tables.credits'))
-				->where('user_id', $userId)
-				->where('expired_at', null)
-				->count() < Config::get('wallet::limit');
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
+		return $this->balanceRepo->findByUser($userId);
 	}
 }

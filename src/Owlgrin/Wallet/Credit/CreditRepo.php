@@ -2,12 +2,11 @@
 
 interface CreditRepo {
 
-	public function add($userId, $credit, $redemption);
+	public function blank($userId);
 
-	public function redeem($userId, $requestAmount);
+	public function apply($userId, $couponIdentifier);
 
 	public function left($userId);
 
-	public function hasCredit($userId);
-
+	public function findByUser($userId);
 }

@@ -46,14 +46,29 @@ class WalletServiceProvider extends ServiceProvider {
 			return $app->make('Owlgrin\Wallet\Commands\AddCreditsCommand');
 		});
 
+		$this->app->bindShared('command.wallet.add.coupon', function($app)
+		{
+			return $app->make('Owlgrin\Wallet\Commands\AddCouponCommand');
+		});
+
+		$this->app->bindShared('command.wallet.add.coupon.for.user', function($app)
+		{
+			return $app->make('Owlgrin\Wallet\Commands\AddCouponForUserCommand');
+		});
+
 		$this->commands('command.wallet.table');
 		$this->commands('command.wallet.add.credit');
+		$this->commands('command.wallet.add.coupon');
+		$this->commands('command.wallet.add.coupon.for.user');
 	}
 
 	protected function registerRepositories()
 	{
 		$this->app->bind('Owlgrin\Wallet\Credit\CreditRepo', 'Owlgrin\Wallet\Credit\DbCreditRepo');
 		$this->app->bind('Owlgrin\Wallet\Redemption\RedemptionRepo', 'Owlgrin\Wallet\Redemption\DbRedemptionRepo');
+		$this->app->bind('Owlgrin\Wallet\Coupon\CouponRepo', 'Owlgrin\Wallet\Coupon\DbCouponRepo');
+		$this->app->bind('Owlgrin\Wallet\Transaction\TransactionRepo', 'Owlgrin\Wallet\Transaction\DbTransactionRepo');
+		$this->app->bind('Owlgrin\Wallet\Balance\BalanceRepo', 'Owlgrin\Wallet\Balance\DbBalanceRepo');
 	}
 
 	/**

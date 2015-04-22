@@ -12,6 +12,9 @@
         "illuminate/support": "4.2.*"
     },
     "autoload": {
+        "classmap": [
+            "tests/TestCase.php"
+        ],
         "psr-0": {
             "Owlgrin\\Wallet\\": "src/"
         }
