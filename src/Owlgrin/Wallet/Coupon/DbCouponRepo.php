@@ -13,18 +13,20 @@ class DbCouponRepo implements CouponRepo {
 		$this->db = $db;
 	}
 
-	//add the coupons
-	public function add($coupon)
+	public function create($coupon)
 	{
 		try
 		{
 			$this->db->table(Config::get('wallet::tables.coupons'))->insert([
 				'name'               => $coupon['name'],
 				'identifier'         => $coupon['identifier'],
-				'description'		 => $coupon['description'],
+				'description'        => $coupon['description'],
 				'amount'             => $coupon['amount'],
 				'amount_redemptions' => $coupon['amount_redemptions'],
-				'redemptions'        => $coupon['redemptions']
+				'redemptions'        => $coupon['redemptions'],
+				'created_at'         => $this->db->raw('now()'),
+				'deleted_at'         => null,
+				'exhausted_at'       => null
 			]);
 		}
 		catch(PDOException $e)
@@ -33,69 +35,13 @@ class DbCouponRepo implements CouponRepo {
 		}
 	}
 
-	//add multiple coupons
-	public function addMultiple($coupons)
-	{
-		try
-		{
-			foreach ($coupons as $coupon)
-			{
-				$this->add($coupon);
-			}
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-
-	}
-
-	// add coupon for user
-	public function storeForUser($userId, $couponId)
-	{
-		try
-		{
-			$this->db->table(Config::get('wallet::tables.user_coupons'))->insert([
-				'user_id'    => $userId,
-				'coupon_id'     => $couponId,
-				'created_at' => $this->db->raw('now()')
-			]);
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-	}
-
-	public function findByUser($userId)
-	{
-		try
-		{
-			return $this->db->table(Config::get('wallet::tables.user_coupons').' AS uc')
-				->join(Config::get('wallet::tables.coupons').' AS c', 'c.id', '=', 'uc.coupon_id')
-				->select('c.name', 'c.identifier', 'c.description', 'c.amount', 'c.amount_redemptions')
-				->where('uc.user_id', $userId)
-				->get();
-		}
-		catch(PDOException $e)
-		{
-			throw new Exceptions\InternalException;
-		}
-	}
-
-	//check coupon could be used
-	public function canBeUsed($couponIdentifier)
+	public function find($identifier)
 	{
 		try
 		{
 			return $this->db->table(Config::get('wallet::tables.coupons'))
-				->where('identifier', $couponIdentifier)
-				// ->where(function($query)
-	   //          {
-	   //              $query->where('redemptions', '>', 0)
-	   //                    ->orWhere('redemptions', '=', -1);
-	   //          })
-	   			->where('redemptions', '!=', 0)
+				->where('identifier', $identifier)
+	   			->where('exhausted_at', null)
 				->first();
 		}
 		catch(PDOException $e)
@@ -104,14 +50,58 @@ class DbCouponRepo implements CouponRepo {
 		}
 	}
 
-	// decrementing redemptions of the coupon
-	public function decrementRedemptions($couponId)
+	public function exhaust($id)
 	{
 		try
 		{
 			$this->db->table(Config::get('wallet::tables.coupons'))
-				->where('id',  $couponId)
+				->where('id',  $coupon['id'])
+				->where('exhausted_at', 'null')
+				->where('redemptions', 0)
+				->update([
+					'exhausted_at' => $this->db->raw('now()')
+				]);
+		}
+		catch(PDOException $e)
+		{
+			throw new Exceptions\InternalException;
+		}
+
+	}
+
+	public function createMultiple($coupons)
+	{
+		try
+		{
+			foreach ($coupons as $coupon)
+			{
+				$this->create($coupon);
+			}
+		}
+		catch(PDOException $e)
+		{
+			throw new Exceptions\InternalException;
+		}
+	}
+
+
+	// decrementing redemptions of the coupon
+	public function decrementRedemptions($couponIdentifier)
+	{
+		$coupon = $this->find($couponIdentifier);
+
+		//checking if the coupon has credit
+		if(! $coupon) throw new Exceptions\CouponLimitReachedException;
+
+		try
+		{
+			$this->db->table(Config::get('wallet::tables.coupons'))
+				->where('id',  $coupon['id'])
 				->decrement('redemptions');
+
+			//exhaust if used
+			return $coupon;
+
 		}
 		catch(PDOException $e)
 		{

@@ -3,24 +3,26 @@
 /**
  * The Wallet core
  */
-use Owlgrin\Wallet\Redemption\RedemptionRepo;
-use Owlgrin\Wallet\Credit\CreditRepo;
 use Owlgrin\Wallet\Coupon\CouponRepo;
+use Owlgrin\Wallet\Wallet\WalletRepo;
 use Owlgrin\Wallet\Transaction\TransactionRepo;
+
 use Owlgrin\Wallet\Exceptions;
 
 class Wallet {
 
-	protected $redemptionRepo;
-	protected $creditRepo;
 	protected $couponRepo;
+	protected $walletRepo;
 	protected $transactionRepo;
 
-	public function __construct(RedemptionRepo $redemptionRepo, CreditRepo $creditRepo, CouponRepo $couponRepo, TransactionRepo $transactionRepo)
+	public function __construct(
+		CouponRepo $couponRepo,
+		WalletRepo $walletRepo,
+		TransactionRepo $transactionRepo
+	)
 	{
-		$this->redemptionRepo  = $redemptionRepo;
-		$this->creditRepo      = $creditRepo;
 		$this->couponRepo      = $couponRepo;
+		$this->walletRepo      = $walletRepo;
 		$this->transactionRepo = $transactionRepo;
 	}
 
@@ -32,12 +34,15 @@ class Wallet {
 	public function user($user)
 	{
 		$this->user = $user;
+		$this->wallet = $this->walletRepo->findByUser($user);
+
+		if(is_null($this->wallet)) throw new Exceptions\WalletNotCreated;
 
 		return $this;
 	}
 
 	/**
-	 * @return [string] [returns user identifier]
+	 * @return the user identifier
 	 */
 	public function getUser()
 	{
@@ -45,29 +50,54 @@ class Wallet {
 	}
 
 	/**
-	 * add balnk credit for the user
+	 * returns the wallet of the user
 	 */
-	public function blankCredit()
+	public function getWallet()
 	{
-		$this->creditRepo->blank($this->user);
+		return $this->wallet;
 	}
 
 	/**
-	 * redeems the amount
+	 * create a new wallet
+	 */
+	public function create($userId)
+	{
+		$this->walletRepo->create($userId);
+	}
+
+	/**
+	 * withdraw the amount
+	 * @param  [integer] $amount [inputs the amount]
+	 * @return the credited amount
+	 */
+	public function withdraw($amount, $trigger)
+	{
+		$trigger = [
+			'type' => array_get($trigger, 'type', 'WITHDRAW'),
+			'id'   => array_get($trigger, 'id')
+		];
+
+		return $this->transactionRepo->withdraw($this->wallet['id'], $amount, $trigger);
+	}
+
+	/**
+	 * withdraw the amount
 	 * @param  [integer] $amount [inputs the amount]
 	 * @return the credited amount
 	 */
 	public function redeem($amount)
 	{
-		return $this->redemptionRepo->redeem($this->user, $amount);
+		return $this->transactionRepo->withdraw(
+			$this->wallet['id'], $amount, ['type' => 'REDEMPTION']
+		);
 	}
 
 	/**
 	 * @return [integer|null] [returns amount left in of the user]
 	 */
-	public function left()
+	public function amount()
 	{
-		return $this->creditRepo->left($this->user);
+		return $this->walletRepo->left($this->user);
 	}
 
 	/**
@@ -83,9 +113,14 @@ class Wallet {
 	 * @param  [string] $coupon [identifier of the coupon]
 	 * @return void
 	 */
-	public function credit($coupon)
+	public function deposit($amount, $redemptionLeft, $trigger)
 	{
-		$this->creditRepo->apply($this->user, $coupon);
+		$trigger = [
+			'type' => array_get($trigger, 'type', 'DEPOSIT'),
+			'id'   => array_get($trigger, 'id')
+		];
+
+		$this->transactionRepo->deposit($this->wallet['id'], $amount, $redemptionLeft, $triggerType, $triggerId);
 	}
 
 	/**
@@ -93,9 +128,9 @@ class Wallet {
 	 * @param  array  $coupon [contains details of the coupon]
 	 * @return null
 	 */
-	public function coupon($coupon)
+	public function createCoupon($coupon)
 	{
-		$this->couponRepo->add($coupon);
+		$this->couponRepo->create($coupon);
 	}
 
 	/**
@@ -106,25 +141,24 @@ class Wallet {
 	 */
 	public function findCoupon($coupon)
 	{
-		return $this->couponRepo->canBeUsed($coupon);
+		return $this->couponRepo->find($coupon);
 	}
 
 	/**
 	 * find the transactions which has been done by user
 	 * @return list of transactions containing amount and direction
 	 */
-	public function transactions()
+	public function transactions($direction = 'all')
 	{
-		return $this->transactionRepo->findByUser($this->user);
+		return $this->transactionRepo->findByWallet($this->wallet, $direction);
 	}
 
-	/**
-	 * [returns all the coupons applied by the user]
-	 * @return list of all the coupons
-	 */
-	public function userCoupons()
+	public function redeemCoupon($couponIdentifier)
 	{
-		return $this->couponRepo->findByUser($this->user);
-	}
+		$coupon = $this->couponRepo->decrementRedemptions($couponIdentifier);
 
+		$this->deposit(
+			$coupon['amount'], $coupon['amount_redemptions'], ['type' => 'COUPON', 'id' => $coupon['id']]
+		);
+	}
 }

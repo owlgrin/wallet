@@ -64,11 +64,9 @@ class WalletServiceProvider extends ServiceProvider {
 
 	protected function registerRepositories()
 	{
-		$this->app->bind('Owlgrin\Wallet\Credit\CreditRepo', 'Owlgrin\Wallet\Credit\DbCreditRepo');
-		$this->app->bind('Owlgrin\Wallet\Redemption\RedemptionRepo', 'Owlgrin\Wallet\Redemption\DbRedemptionRepo');
 		$this->app->bind('Owlgrin\Wallet\Coupon\CouponRepo', 'Owlgrin\Wallet\Coupon\DbCouponRepo');
-		$this->app->bind('Owlgrin\Wallet\Transaction\TransactionRepo', 'Owlgrin\Wallet\Transaction\DbTransactionRepo');
-		$this->app->bind('Owlgrin\Wallet\Balance\BalanceRepo', 'Owlgrin\Wallet\Balance\DbBalanceRepo');
+		$this->app->bind('Owlgrin\Wallet\Transaction\TransactionRepo', 'Owlgrin\Wallet\Transaction\SampleTransactionRepo');
+		$this->app->bind('Owlgrin\Wallet\Wallet\WalletRepo', 'Owlgrin\Wallet\Wallet\DbWalletRepo');
 	}
 
 	/**
