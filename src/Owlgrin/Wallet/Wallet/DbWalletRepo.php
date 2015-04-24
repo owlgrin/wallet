@@ -53,6 +53,26 @@ class DbWalletRepo implements WalletRepo {
 		}
 	}
 
+	public function update($walletId, $amount, $redemptionLeft)
+	{
+		try
+		{
+
+			$this->db->table(Config::get('wallet::tables.wallets'))
+				->where('id', $walletId)
+				->update([
+					'amount'         => $amount,
+					'redemption_limit' => $redemptionLeft,
+					'deleted_at'	  => null,
+					'updated_at'	  => $this->db->raw('now()')
+				]);
+		}
+		catch(PDOException $e)
+		{
+			throw new Exceptions\InternalException;
+		}
+	}
+
 	public function find($id)
 	{
 		try

@@ -9,19 +9,26 @@ use PDOException, Config;;
 
 class SampleTransactionRepo implements TransactionRepo {
 
+	const ACTION_DEPOSIT = 'DEPOSIT';
+
 	const DIRECTION_DEBIT = 'DEBIT';
 	const DIRECTION_CREDIT = 'CREDIT';
+	const DIRECTION_ADJUST = 'ADJUST';
 
 	const TYPE_AMOUNT = 'AMOUNT';
 	const TYPE_REDEMPTION = 'REDEMPTION';
 
 	protected $db;
 	protected $walletRepo;
+	protected $amountTransactionMaker;
+	protected $redemptionTransactionMaker;
 
-	public function __construct(Database $db, WalletRepo $walletRepo)
+	public function __construct(Database $db, WalletRepo $walletRepo, SimpleAmountTransactionMaker $amountTransactionMaker, AdjusterRedemptionTransactionMaker $redemptionTransactionMaker)
 	{
 		$this->db = $db;
 		$this->walletRepo = $walletRepo;
+		$this->amountTransactionMaker = $amountTransactionMaker;
+		$this->redemptionTransactionMaker = $redemptionTransactionMaker;
 	}
 
 	public function store($walletId, $transactions, $trigger)
@@ -80,7 +87,7 @@ class SampleTransactionRepo implements TransactionRepo {
 			$this->store($walletId, $transactions, $trigger);
 
 			// updating wallet balance
-			$this->updateWallet($walletId, $transactions);
+			$this->updateWallet($wallet, $transactions);
 
 			$this->db->commit();
 		}
@@ -119,14 +126,17 @@ class SampleTransactionRepo implements TransactionRepo {
 
 			// prepare transactions
 			$transactions = [];
-			if($amount > 0) $transactions[] = ['amount' => $amount, 'direction' => self::DIRECTION_CREDIT, 'type' => self::TYPE_AMOUNT];
-			if($redemptions > 0) $transactions[] = ['amount' => $redemptions, 'direction' => self::DIRECTION_CREDIT, 'type' => self::TYPE_REDEMPTION];
+			if($amount > 0) $transactions[] = $this->makeTransaction(self::ACTION_DEPOSIT, self::TYPE_AMOUNT, $amount);
+			// if($amount > 0) $transactions[] = ['amount' => $amount, 'direction' => self::DIRECTION_CREDIT, 'type' => self::TYPE_AMOUNT];
+			if($redemptions > 0) $transactions[] = $this->makeTransaction(self::ACTION_DEPOSIT, self::TYPE_REDEMPTION, $redemptions);
+			// if($redemptions > 0) $transactions[] = ['amount' => $redemptions, 'direction' => self::DIRECTION_CREDIT, 'type' => self::TYPE_REDEMPTION];
 
 			// storing
 			$this->store($walletId, $transactions, $trigger);
 
 			// updating wallet balance
-			$this->updateWallet($walletId, $transactions);
+			$wallet = $this->walletRepo->find($walletId);
+			$this->updateWallet($wallet, $transactions);
 
 			$this->db->commit();
 		}
@@ -138,17 +148,27 @@ class SampleTransactionRepo implements TransactionRepo {
 		}
 	}
 
+	protected function makeTransaction($action, $type, $amount)
+	{
+		return $this->getTransactionMaker($type)->make($action, $amount);
+	}
+
+	private function getTransactionMaker($type)
+	{
+		return $this->{camel_case(strtolower($type)) . 'TransactionMaker'};
+	}
+
 	/**
 	 * Updates the information in wallet
 	 *
 	 * @param  int $walletId
 	 * @param  array $transactions
 	 */
-	private function updateWallet($walletId, $transactions)
+	private function updateWallet($wallet, $transactions)
 	{
-		$balance = $this->calculateTransactions($transactions);
-		$this->walletRepo->deposit(
-			$walletId, $balance[self::TYPE_AMOUNT], $balance[self::TYPE_REDEMPTION]
+		$balance = $this->calculateTransactions($wallet, $transactions);
+		$this->walletRepo->update(
+			$wallet['id'], $balance[self::TYPE_AMOUNT], $balance[self::TYPE_REDEMPTION]
 		);
 	}
 
@@ -160,16 +180,16 @@ class SampleTransactionRepo implements TransactionRepo {
 	 *
 	 * @return array
 	 */
-	private function calculateTransactions($transactions)
+	private function calculateTransactions($wallet, $transactions)
 	{
 		$balance = [
-			self::TYPE_AMOUNT => 0,
-			self::TYPE_REDEMPTION => 0
+			self::TYPE_AMOUNT => $wallet['amount'],
+			self::TYPE_REDEMPTION => $wallet['redemption_limit']
 		];
 
 		foreach($transactions as $transaction)
 		{
-			$balance[$transaction['type']] += $this->calculateTransaction($transaction);
+			$balance[$transaction['type']] = $this->calculateTransaction($balance[$transaction['type']], $transaction);
 		}
 
 		return $balance;
@@ -182,11 +202,22 @@ class SampleTransactionRepo implements TransactionRepo {
 	 *
 	 * @return int
 	 */
-	private function calculateTransaction($transaction)
+	private function calculateTransaction($currentBalance, $transaction)
 	{
-		return $transaction['direction'] === self::DIRECTION_CREDIT
-				? $transaction['amount'] * 1 		// as it is
-				: $transaction['amount'] * -1; 		// make it negative
+		switch($transaction['direction'])
+		{
+			case self::DIRECTION_CREDIT:
+				return $currentBalance + $transaction['amount'];
+
+			case self::DIRECTION_DEBIT:
+				return $currentBalance - $transaction['amount'];
+
+			case self::DIRECTION_ADJUST:
+				return $transaction['amount'];
+		}
+		// return $transaction['direction'] === self::DIRECTION_CREDIT
+		// 		? $transaction['amount'] * 1 		// as it is
+		// 		: $transaction['amount'] * -1; 		// make it negative
 	}
 
 	public function findByWallet($walletId, $direction)
