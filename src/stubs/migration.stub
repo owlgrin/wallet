@@ -12,43 +12,6 @@ class CreateWalletTable extends Migration {
 	 */
 	public function up()
 	{
-		// Schema::create('_wallet_balances', function(Blueprint $table)
-		// {
-		// 	$table->increments('id');
-		// 	$table->string('user_id');
-		// 	$table->integer('amount');
-		// 	$table->integer('redemptions');
-		// 	$table->timestamp('expired_at')->nullable();
-		// 	$table->timestamps();
-		// });
-
-		// Schema::create('_wallet_transactions', function(Blueprint $table)
-		// {
-		// 	$table->increments('id');
-		// 	$table->integer('balance_id');
-		// 	$table->integer('amount');
-		// 	$table->enum('direction', ['credit', 'debit']);
-		// });
-
-		// Schema::create('_wallet_coupons', function(Blueprint $table)
-		// {
-		// 	$table->increments('id');
-		// 	$table->string('name');
-		// 	$table->string('identifier');
-		// 	$table->string('description');
-		// 	$table->integer('amount');
-		// 	$table->integer('amount_redemptions');
-		// 	$table->integer('redemptions');
-		// });
-
-		// Schema::create('_wallet_user_coupons', function(Blueprint $table)
-		// {
-		// 	$table->increments('id');
-		// 	$table->string('user_id');
-		// 	$table->integer('coupon_id');
-		// 	$table->timestamp('created_at');
-		// });
-
 		Schema::create('_wallet_wallets', function(Blueprint $table)
 		{
 			$table->increments('id');
@@ -64,8 +27,8 @@ class CreateWalletTable extends Migration {
 			$table->increments('id');
 			$table->integer('wallet_id');
 			$table->integer('amount');
-			$table->enum('direction', ['credit', 'debit']);
-			$table->enum('type', ['amount', 'redemption']);
+			$table->enum('direction', ['CREDIT', 'DEBIT']);
+			$table->enum('type', ['AMOUNT', 'REDEMPTION']);
 			$table->string('trigger_type');
 			$table->integer('trigger_id');
 			$table->timestamps();
@@ -94,11 +57,6 @@ class CreateWalletTable extends Migration {
 	 */
 	public function down()
 	{
-		// Schema::drop('_wallet_balances');
-		// Schema::drop('_wallet_transactions');
-		// Schema::drop('_wallet_user_coupons');
-		// Schema::drop('_wallet_coupons');
-
 		Schema::drop('_wallet_wallets');
 		Schema::drop('_wallet_transactions');
 		Schema::drop('_wallet_coupons');

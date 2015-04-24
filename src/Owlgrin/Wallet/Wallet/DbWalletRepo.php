@@ -9,8 +9,6 @@ class DbWalletRepo implements WalletRepo {
 
 	protected $db;
 
-	const ACTION_CREDIT = 'credit';
-
 	public function __construct(Database $db)
 	{
 		$this->db = $db;
@@ -22,7 +20,7 @@ class DbWalletRepo implements WalletRepo {
 		{
 			return $this->db->table(Config::get('wallet::tables.wallets'))->insertGetId([
 				'user_id'          => $userId,
-				'balance'          => 0,
+				'amount'          => 0,
 				'redemption_limit' => 0,
 				'deleted_at'       => null,
 				'created_at'       => $this->db->raw('now()'),
@@ -35,7 +33,7 @@ class DbWalletRepo implements WalletRepo {
 		}
 	}
 
-	public function update($walletId, $balance, $redemptionLeft)
+	public function deposit($walletId, $amount, $redemptionLeft)
 	{
 		try
 		{
@@ -43,8 +41,8 @@ class DbWalletRepo implements WalletRepo {
 			$this->db->table(Config::get('wallet::tables.wallets'))
 				->where('id', $walletId)
 				->update([
-					'balance'         => $balance,
-					'redemption_limit' => $redemptionLeft,
+					'amount'         => $this->db->raw('`amount` + ' . $amount),
+					'redemption_limit' => $this->db->raw('`redemption_limit` + ' . $redemptionLeft),
 					'deleted_at'	  => null,
 					'updated_at'	  => $this->db->raw('now()')
 				]);
@@ -93,8 +91,23 @@ class DbWalletRepo implements WalletRepo {
 				->where('id', $walletId)
 				->where('deleted_at', null)
 				->where('redemption_limit', '>', 0)
-				->where('balance', '>', 0)
+				->where('amount', '>', 0)
 				->first();
+		}
+		catch(PDOException $e)
+		{
+			throw new Exceptions\InternalException;
+		}
+	}
+
+	public function amount($walletId)
+	{
+		try
+		{
+			return $this->db->table(Config::get('wallet::tables.wallets'))
+				->where('id', $walletId)
+				->where('deleted_at', null)
+				->pluck('amount');
 		}
 		catch(PDOException $e)
 		{

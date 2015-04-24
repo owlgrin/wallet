@@ -6,6 +6,9 @@ use PDOException, Exception, Config;
 
 class DbCouponRepo implements CouponRepo {
 
+	const TYPE_REDEMPTION = 'REDEMPTION';
+	const DIRECTION_CREDIT = 'CREDIT';
+
 	protected $db;
 
 	public function __construct(Database $db)
@@ -55,7 +58,7 @@ class DbCouponRepo implements CouponRepo {
 		try
 		{
 			$this->db->table(Config::get('wallet::tables.coupons'))
-				->where('id',  $coupon['id'])
+				->where('id',  $id)
 				->where('exhausted_at', 'null')
 				->where('redemptions', 0)
 				->update([
@@ -86,8 +89,9 @@ class DbCouponRepo implements CouponRepo {
 
 
 	// decrementing redemptions of the coupon
-	public function decrementRedemptions($couponIdentifier)
+	public function redeemCoupon($couponIdentifier)
 	{
+		//use the transaction repo to check whether the coupon with
 		$coupon = $this->find($couponIdentifier);
 
 		//checking if the coupon has credit
@@ -95,12 +99,21 @@ class DbCouponRepo implements CouponRepo {
 
 		try
 		{
-			$this->db->table(Config::get('wallet::tables.coupons'))
-				->where('id',  $coupon['id'])
-				->decrement('redemptions');
+
+			$count = $this->db->table(Config::get('wallet::tables.transactions'))
+				->where('type', self::TYPE_REDEMPTION)
+				->where('trigger_type', 'COUPON')
+				->where('direction', self::DIRECTION_CREDIT)
+				->where('trigger_id', $coupon['id'])
+				->count();
+
+			if($count < $coupon['redemptions'] or $coupon['redemptions'] == -1)
+			{
+				return $coupon;
+			}
 
 			//exhaust if used
-			return $coupon;
+			$this->exhaust($coupon['id']);
 
 		}
 		catch(PDOException $e)

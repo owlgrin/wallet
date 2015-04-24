@@ -70,7 +70,7 @@ class Wallet {
 	 * @param  [integer] $amount [inputs the amount]
 	 * @return the credited amount
 	 */
-	public function withdraw($amount, $trigger)
+	public function withdraw($amount, $trigger = null)
 	{
 		$trigger = [
 			'type' => array_get($trigger, 'type', 'WITHDRAW'),
@@ -97,7 +97,7 @@ class Wallet {
 	 */
 	public function amount()
 	{
-		return $this->walletRepo->left($this->user);
+		return $this->walletRepo->amount($this->wallet['id']);
 	}
 
 	/**
@@ -105,7 +105,7 @@ class Wallet {
 	 */
 	public function findByUser()
 	{
-		return $this->creditRepo->findByUser($this->user);
+		return $this->walletRepo->find($this->wallet['id']);
 	}
 
 	/**
@@ -120,7 +120,7 @@ class Wallet {
 			'id'   => array_get($trigger, 'id')
 		];
 
-		$this->transactionRepo->deposit($this->wallet['id'], $amount, $redemptionLeft, $triggerType, $triggerId);
+		$this->transactionRepo->deposit($this->wallet['id'], $amount, $redemptionLeft, $trigger);
 	}
 
 	/**
@@ -139,9 +139,9 @@ class Wallet {
 	 * @return null if coupon is expired or invalid
 	 * @return detail of the coupon if valid
 	 */
-	public function findCoupon($coupon)
+	public function findCoupon($identifier)
 	{
-		return $this->couponRepo->find($coupon);
+		return $this->couponRepo->find($identifier);
 	}
 
 	/**
@@ -150,12 +150,12 @@ class Wallet {
 	 */
 	public function transactions($direction = 'all')
 	{
-		return $this->transactionRepo->findByWallet($this->wallet, $direction);
+		return $this->transactionRepo->findByWallet($this->wallet['id'], $direction);
 	}
 
 	public function redeemCoupon($couponIdentifier)
 	{
-		$coupon = $this->couponRepo->decrementRedemptions($couponIdentifier);
+		$coupon = $this->couponRepo->redeemCoupon($couponIdentifier);
 
 		$this->deposit(
 			$coupon['amount'], $coupon['amount_redemptions'], ['type' => 'COUPON', 'id' => $coupon['id']]

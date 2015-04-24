@@ -7,13 +7,22 @@ use Owlgrin\Wallet\Wallet\WalletRepo;
 
 use PDOException, Config;;
 
-class SampleTransactionRepo {
+class SampleTransactionRepo implements TransactionRepo {
 
 	const DIRECTION_DEBIT = 'DEBIT';
 	const DIRECTION_CREDIT = 'CREDIT';
 
 	const TYPE_AMOUNT = 'AMOUNT';
 	const TYPE_REDEMPTION = 'REDEMPTION';
+
+	protected $db;
+	protected $walletRepo;
+
+	public function __construct(Database $db, WalletRepo $walletRepo)
+	{
+		$this->db = $db;
+		$this->walletRepo = $walletRepo;
+	}
 
 	public function store($walletId, $transactions, $trigger)
 	{
@@ -22,14 +31,26 @@ class SampleTransactionRepo {
 		try
 		{
 			$this->db->table(Config::get('wallet::tables.transactions'))->insert([
-				'wallet_id'    => $walletId,
-				'amount'       => $amount,
-				'direction'    => $direction,
-				'type'         => $type,
-				'trigger_type' => $triggerType,
-				'trigger_id'   => $triggerId,
-				'created_at'   => $this->db->raw('now()'),
-				'updated_at'   => $this->db->raw('now()')
+				[
+					'wallet_id'    => $walletId,
+					'amount'       => $transactions[0]['amount'],
+					'direction'    => $transactions[0]['direction'],
+					'type'         => $transactions[0]['type'],
+					'trigger_type' => $trigger['type'],
+					'trigger_id'   => $trigger['id'],
+					'created_at'   => $this->db->raw('now()'),
+					'updated_at'   => $this->db->raw('now()')
+				],
+				[
+					'wallet_id'    => $walletId,
+					'amount'       => $transactions[1]['amount'],
+					'direction'    => $transactions[1]['direction'],
+					'type'         => $transactions[1]['type'],
+					'trigger_type' => $trigger['type'],
+					'trigger_id'   => $trigger['id'],
+					'created_at'   => $this->db->raw('now()'),
+					'updated_at'   => $this->db->raw('now()')
+				]
 			]);
 
 		}
@@ -47,13 +68,13 @@ class SampleTransactionRepo {
 			$this->db->beginTransaction();
 
 			$wallet = $this->walletRepo->find($walletId);
-			$amountRedeemed = $this->calculateRedemption($amount, $wallet['balance']);
+			$amountRedeemed = $this->calculateRedemption($amount, $wallet['amount']);
 
 			$transactions = [];
 			if($amountRedeemed > 0)
 			{
-				$transactions[] = [$amountRedeemed, self::DIRECTION_DEBIT, self::TYPE_AMOUNT];
-				$transactions[] = [1, self::DIRECTION_DEBIT, self::TYPE_REDEMPTION];
+				$transactions[] = ['amount' => $amountRedeemed, 'direction' => self::DIRECTION_DEBIT, 'type' => self::TYPE_AMOUNT];
+				$transactions[] = ['amount' => 1, 'direction' => self::DIRECTION_DEBIT, 'type' => self::TYPE_REDEMPTION];
 			}
 
 			$this->store($walletId, $transactions, $trigger);
@@ -98,8 +119,8 @@ class SampleTransactionRepo {
 
 			// prepare transactions
 			$transactions = [];
-			if($amount > 0) $transactions[] = [$amount, self::DIRECTION_CREDIT, self::TYPE_AMOUNT];
-			if($redemptions > 0) $transactions[] = [$redemptions, self::DIRECTION_CREDIT, self::TYPE_REDEMPTION];
+			if($amount > 0) $transactions[] = ['amount' => $amount, 'direction' => self::DIRECTION_CREDIT, 'type' => self::TYPE_AMOUNT];
+			if($redemptions > 0) $transactions[] = ['amount' => $redemptions, 'direction' => self::DIRECTION_CREDIT, 'type' => self::TYPE_REDEMPTION];
 
 			// storing
 			$this->store($walletId, $transactions, $trigger);
@@ -163,8 +184,28 @@ class SampleTransactionRepo {
 	 */
 	private function calculateTransaction($transaction)
 	{
-		return $transaction['direction'] === self::DIRECTION_CREDIT)
+		return $transaction['direction'] === self::DIRECTION_CREDIT
 				? $transaction['amount'] * 1 		// as it is
 				: $transaction['amount'] * -1; 		// make it negative
+	}
+
+	public function findByWallet($walletId, $direction)
+	{
+		try
+		{
+			$query = $this->db->table(Config::get('wallet::tables.transactions'))
+				->where('wallet_id', $walletId);
+
+			if($direction != 'all' or $direction != 'ALL')
+			{
+				$query = $query->where('direction', $direction);
+			}
+
+			return $query->get();
+		}
+		catch(PDOException $e)
+		{
+			throw new Exceptions\InternalException;
+		}
 	}
 }
