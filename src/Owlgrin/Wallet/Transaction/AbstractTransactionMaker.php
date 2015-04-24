@@ -8,7 +8,7 @@ abstract class AbstractTransactionMaker implements TransactionMaker {
 	const DIRECTION_DEBIT = 'DEBIT';
 	const DIRECTION_ADJUST = 'ADJUST';
 
-	abstract public function make($action, $amount);
+	abstract public function make($action, $amount, $currentBalance = null);
 
 	protected function getDirection($action)
 	{

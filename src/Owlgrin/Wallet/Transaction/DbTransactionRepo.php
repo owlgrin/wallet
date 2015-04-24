@@ -9,29 +9,50 @@ use PDOException, Config;
 
 class DbTransactionRepo implements TransactionRepo {
 
+	const ACTION_DEPOSIT = 'DEPOSIT';
+	const ACTION_WITHDRAW = 'WITHDRAW';
+
+	const DIRECTION_DEBIT = 'DEBIT';
+	const DIRECTION_CREDIT = 'CREDIT';
+	const DIRECTION_ADJUST = 'ADJUST';
+
+	const TYPE_AMOUNT = 'AMOUNT';
+	const TYPE_REDEMPTION = 'REDEMPTION';
+
 	protected $db;
 	protected $walletRepo;
+	protected $amountTransactionMaker;
+	protected $redemptionTransactionMaker;
 
-	public function __construct(Database $db, WalletRepo $walletRepo)
+	public function __construct(Database $db, WalletRepo $walletRepo, AmountTransactionMaker $amountTransactionMaker, RedemptionTransactionMaker $redemptionTransactionMaker)
 	{
-		$this->db         = $db;
+		$this->db = $db;
 		$this->walletRepo = $walletRepo;
+		$this->amountTransactionMaker = $amountTransactionMaker;
+		$this->redemptionTransactionMaker = $redemptionTransactionMaker;
 	}
 
-	public function create($walletId, $amount, $direction, $type, $triggerType, $triggerId)
+	public function store($walletId, $transactions, $trigger)
 	{
+		if(count($transactions) === 0) throw new Exceptions\InvalidTransactionException;
+
 		try
 		{
-			$this->db->table(Config::get('wallet::tables.transactions'))->insert([
-				'wallet_id'    => $walletId,
-				'amount'       => $amount,
-				'direction'    => $direction,
-				'type'         => $type,
-				'trigger_type' => $triggerType,
-				'trigger_id'   => $triggerId,
-				'created_at'   => $this->db->raw('now()'),
-				'updated_at'   => $this->db->raw('now()')
-			]);
+			foreach($transactions as $transaction)
+			{
+				$query[] = [
+					'wallet_id'    => $walletId,
+					'amount'       => $transaction['amount'],
+					'direction'    => $transaction['direction'],
+					'type'         => $transaction['type'],
+					'trigger_type' => $trigger['type'],
+					'trigger_id'   => $trigger['id'],
+					'created_at'   => $this->db->raw('now()'),
+					'updated_at'   => $this->db->raw('now()')
+				];
+			}
+
+			$this->db->table(Config::get('wallet::tables.transactions'))->insert($query);
 
 		}
 		catch(PDOException $e)
@@ -40,7 +61,7 @@ class DbTransactionRepo implements TransactionRepo {
 		}
 	}
 
-	public function deposit($walletId, $amount, $redemptionLeft, $triggerType, $triggerId)
+	public function withdraw($walletId, $amount = 0, $trigger)
 	{
 		try
 		{
@@ -48,25 +69,19 @@ class DbTransactionRepo implements TransactionRepo {
 			$this->db->beginTransaction();
 
 			$wallet = $this->walletRepo->find($walletId);
+			$amountRedeemed = $this->calculateRedemption($amount, $wallet['amount']);
 
-			//check if we will make a fresh entry of the amount and redemption
-			//or we will just sum up the amount and redemptions with old one
-			if(($wallet['balance'] > 0) and ($wallet['redemption_limit'] > 0) and is_null($wallet['deleted_at']))
+			$transactions = [];
+			if($amountRedeemed > 0)
 			{
-				$newAmount = $wallet['balance'] + $amount;
-				$newRedemptions = $wallet['redemption_limit'] + $redemptionLeft;
-			}
-			else
-			{
-				$newAmount = $amount;
-				$newRedemptions = $redemptionLeft;
+				$transactions[] = $this->makeTransaction(self::ACTION_WITHDRAW, self::TYPE_AMOUNT, $amountRedeemed);
+				$transactions[] = $this->makeTransaction(self::ACTION_WITHDRAW, self::TYPE_REDEMPTION, 1, $wallet['redemption_limit']);
 			}
 
-			$this->create($walletId, $amount, $direction = 'credit', $type = 'amount', $triggerType, $triggerId);
+			$this->store($walletId, $transactions, $trigger);
 
-			$this->create($walletId, $amount, $direction = 'credit', $type = 'redemption', $triggerType, $triggerId);
-
-			$this->walletRepo->update($walletId, $newAmount, $newRedemptions);
+			// updating wallet balance
+			$this->updateWallet($wallet, $transactions);
 
 			$this->db->commit();
 		}
@@ -78,67 +93,120 @@ class DbTransactionRepo implements TransactionRepo {
 		}
 	}
 
-	public function redeem($walletId, $requestedAmount)
+	private function calculateRedemption($requestedAmount, $walletAmount)
 	{
-		//checking if user has balance left
-		if( ! $this->walletRepo->hasCredit($walletId)) throw new Exceptions\NoCreditsException;
-
-		try
+		if($walletAmount === 0)
 		{
-			//starting the transaction
-			$this->db->beginTransaction();
-
-			//find the existing balance of the user
-			$wallet = $this->walletRepo->find($walletId);
-
-			//find the amount which is to be redeemed
-			$redeemedAmount = $this->getRedemptionAmount($requestedAmount, $wallet['balance']);
-
-			//find the left amount and left redemptions
-			$leftAmount = $wallet['balance'] - $redeemedAmount;
-			$leftRedemptions = $wallet['redemption_limit'] - 1;
-
-			// credit entry in transaction table
-			$this->create($walletId, $redeemedAmount, $direction = 'debit', $type = 'amount', $triggerType = 'redemption', null);
-
-			$this->create($walletId, $redeemedAmount, $direction = 'debit', $type = 'redemption', $triggerType = 'redemption', null);
-
-			//update the balance on redemption
-			$this->walletRepo->update($walletId, $leftAmount, $leftRedemptions);
-
-			//finally commiting all the changes
-			$this->db->commit();
-
-			//returning thr redeemed amount
-			return $redeemedAmount;
+			throw new Exceptions\EmptyWalletException;
 		}
-		catch(Exceptions\InternalException $e)
-		{
-			//rolling back is exception occurs
-			$this->db->rollback();
 
-			throw new Exceptions\InternalException;
-		}
+		return $walletAmount >= $requestedAmount ? $requestedAmount : $walletAmount;
 	}
 
 	/**
-	 * find redemption amount
-	 * @param  [int] $requestedAmount [maount which is requested to user]
-	 * @param  [int] $amountLeft      [amount which is left with user]
-	 * @return [int]                  [amount]
+	 * Makes a deposit in the wallet
+	 *
+	 * @param  int  $walletId
+	 * @param  int $amount
+	 * @param  int $redemptions
+	 * @param  array  $trigger
 	 */
-	private function getRedemptionAmount($requestedAmount, $amountLeft)
+	public function deposit($walletId, $amount = 0, $redemptions = 0, $trigger)
 	{
-		//if the amount left is greater than or equal to requested amount
-		//then we will return requested amount
-		//else we will return amount left for redemption
-		if($amountLeft >= $requestedAmount)
+		try
 		{
-			return $requestedAmount;
+			//starting the transaction
+			$this->db->beginTransaction();
+
+			$wallet = $this->walletRepo->find($walletId);
+
+			// prepare transactions
+			$transactions = [];
+			if($amount > 0) $transactions[] = $this->makeTransaction(self::ACTION_DEPOSIT, self::TYPE_AMOUNT, $amount);
+			if($redemptions > 0) $transactions[] = $this->makeTransaction(self::ACTION_DEPOSIT, self::TYPE_REDEMPTION, $redemptions, $wallet['redemption_limit']);
+
+			// storing
+			$this->store($walletId, $transactions, $trigger);
+
+			// updating wallet balance
+			$this->updateWallet($wallet, $transactions);
+
+			$this->db->commit();
 		}
-		else
+		catch(Exceptions\InternalException $e)
 		{
-			return $amountLeft;
+			$this->db->rollback();
+
+			throw new Exceptions\InternalException;
+		}
+	}
+
+	protected function makeTransaction($action, $type, $amount, $current = null)
+	{
+		return $this->getTransactionMaker($type)->make($action, $amount, $current);
+	}
+
+	private function getTransactionMaker($type)
+	{
+		return $this->{camel_case(strtolower($type)) . 'TransactionMaker'};
+	}
+
+	/**
+	 * Updates the information in wallet
+	 *
+	 * @param  int $walletId
+	 * @param  array $transactions
+	 */
+	private function updateWallet($wallet, $transactions)
+	{
+		$balance = $this->calculateTransactions($wallet, $transactions);
+		$this->walletRepo->update(
+			$wallet['id'], $balance[self::TYPE_AMOUNT], $balance[self::TYPE_REDEMPTION]
+		);
+	}
+
+	/**
+	 * Calculates the total computed amount and
+	 * redemptions for all transactions
+	 *
+	 * @param  array $transactions
+	 *
+	 * @return array
+	 */
+	private function calculateTransactions($wallet, $transactions)
+	{
+		$balance = [
+			self::TYPE_AMOUNT => $wallet['amount'],
+			self::TYPE_REDEMPTION => $wallet['redemption_limit']
+		];
+
+		foreach($transactions as $transaction)
+		{
+			$balance[$transaction['type']] = $this->calculateTransaction($balance[$transaction['type']], $transaction);
+		}
+
+		return $balance;
+	}
+
+	/**
+	 * Calculates the computation of a single transaction
+	 *
+	 * @param  array $transaction
+	 *
+	 * @return int
+	 */
+	private function calculateTransaction($currentBalance, $transaction)
+	{
+		switch($transaction['direction'])
+		{
+			case self::DIRECTION_CREDIT:
+				return $currentBalance + $transaction['amount'];
+
+			case self::DIRECTION_DEBIT:
+				return $currentBalance - $transaction['amount'];
+
+			case self::DIRECTION_ADJUST:
+				return $transaction['amount'];
 		}
 	}
 
@@ -147,12 +215,11 @@ class DbTransactionRepo implements TransactionRepo {
 		try
 		{
 			$query = $this->db->table(Config::get('wallet::tables.transactions'))
-				->select('amount', 'direction', 'type', 'trigger_type', 'trigger_id')
 				->where('wallet_id', $walletId);
 
-			if($direction != 'all')
+			if($direction != 'all' or $direction != 'ALL')
 			{
-				$query = where('direction', $direction);
+				$query = $query->where('direction', $direction);
 			}
 
 			return $query->get();
@@ -162,5 +229,4 @@ class DbTransactionRepo implements TransactionRepo {
 			throw new Exceptions\InternalException;
 		}
 	}
-
 }

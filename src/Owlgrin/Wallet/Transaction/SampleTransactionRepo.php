@@ -7,9 +7,10 @@ use Owlgrin\Wallet\Wallet\WalletRepo;
 
 use PDOException, Config;;
 
-class SampleTransactionRepo implements TransactionRepo {
+class DbTransactionRepo implements TransactionRepo {
 
 	const ACTION_DEPOSIT = 'DEPOSIT';
+	const ACTION_WITHDRAW = 'WITHDRAW';
 
 	const DIRECTION_DEBIT = 'DEBIT';
 	const DIRECTION_CREDIT = 'CREDIT';
@@ -37,28 +38,21 @@ class SampleTransactionRepo implements TransactionRepo {
 
 		try
 		{
-			$this->db->table(Config::get('wallet::tables.transactions'))->insert([
-				[
+			foreach($transactions as $transaction)
+			{
+				$query[] = [
 					'wallet_id'    => $walletId,
-					'amount'       => $transactions[0]['amount'],
-					'direction'    => $transactions[0]['direction'],
-					'type'         => $transactions[0]['type'],
+					'amount'       => $transaction['amount'],
+					'direction'    => $transaction['direction'],
+					'type'         => $transaction['type'],
 					'trigger_type' => $trigger['type'],
 					'trigger_id'   => $trigger['id'],
 					'created_at'   => $this->db->raw('now()'),
 					'updated_at'   => $this->db->raw('now()')
-				],
-				[
-					'wallet_id'    => $walletId,
-					'amount'       => $transactions[1]['amount'],
-					'direction'    => $transactions[1]['direction'],
-					'type'         => $transactions[1]['type'],
-					'trigger_type' => $trigger['type'],
-					'trigger_id'   => $trigger['id'],
-					'created_at'   => $this->db->raw('now()'),
-					'updated_at'   => $this->db->raw('now()')
-				]
-			]);
+				];
+			}
+
+			$this->db->table(Config::get('wallet::tables.transactions'))->insert($query);
 
 		}
 		catch(PDOException $e)
@@ -80,8 +74,8 @@ class SampleTransactionRepo implements TransactionRepo {
 			$transactions = [];
 			if($amountRedeemed > 0)
 			{
-				$transactions[] = ['amount' => $amountRedeemed, 'direction' => self::DIRECTION_DEBIT, 'type' => self::TYPE_AMOUNT];
-				$transactions[] = ['amount' => 1, 'direction' => self::DIRECTION_DEBIT, 'type' => self::TYPE_REDEMPTION];
+				$transactions[] = $this->makeTransaction(self::ACTION_WITHDRAW, self::TYPE_AMOUNT, $amountRedeemed);
+				$transactions[] = $this->makeTransaction(self::ACTION_WITHDRAW, self::TYPE_REDEMPTION, 1, $wallet['redemption_limit']);
 			}
 
 			$this->store($walletId, $transactions, $trigger);
@@ -124,18 +118,17 @@ class SampleTransactionRepo implements TransactionRepo {
 			//starting the transaction
 			$this->db->beginTransaction();
 
+			$wallet = $this->walletRepo->find($walletId);
+
 			// prepare transactions
 			$transactions = [];
 			if($amount > 0) $transactions[] = $this->makeTransaction(self::ACTION_DEPOSIT, self::TYPE_AMOUNT, $amount);
-			// if($amount > 0) $transactions[] = ['amount' => $amount, 'direction' => self::DIRECTION_CREDIT, 'type' => self::TYPE_AMOUNT];
-			if($redemptions > 0) $transactions[] = $this->makeTransaction(self::ACTION_DEPOSIT, self::TYPE_REDEMPTION, $redemptions);
-			// if($redemptions > 0) $transactions[] = ['amount' => $redemptions, 'direction' => self::DIRECTION_CREDIT, 'type' => self::TYPE_REDEMPTION];
+			if($redemptions > 0) $transactions[] = $this->makeTransaction(self::ACTION_DEPOSIT, self::TYPE_REDEMPTION, $redemptions, $wallet['redemption_limit']);
 
 			// storing
 			$this->store($walletId, $transactions, $trigger);
 
 			// updating wallet balance
-			$wallet = $this->walletRepo->find($walletId);
 			$this->updateWallet($wallet, $transactions);
 
 			$this->db->commit();
@@ -148,9 +141,9 @@ class SampleTransactionRepo implements TransactionRepo {
 		}
 	}
 
-	protected function makeTransaction($action, $type, $amount)
+	protected function makeTransaction($action, $type, $amount, $current = null)
 	{
-		return $this->getTransactionMaker($type)->make($action, $amount);
+		return $this->getTransactionMaker($type)->make($action, $amount, $current);
 	}
 
 	private function getTransactionMaker($type)
@@ -215,9 +208,6 @@ class SampleTransactionRepo implements TransactionRepo {
 			case self::DIRECTION_ADJUST:
 				return $transaction['amount'];
 		}
-		// return $transaction['direction'] === self::DIRECTION_CREDIT
-		// 		? $transaction['amount'] * 1 		// as it is
-		// 		: $transaction['amount'] * -1; 		// make it negative
 	}
 
 	public function findByWallet($walletId, $direction)
