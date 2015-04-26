@@ -6,7 +6,7 @@ class MaxRedemptionTransactionMaker extends RedemptionTransactionMaker {
 		return [
 			'direction' => $this->getDirection($action),
 			'type' => self::TYPE,
-			'amount' => $this->getAdjustedAmount($action, $amount, $current)
+			'amount' => $this->getMaxAmount($action, $amount, $current)
 		];
 	}
 
@@ -15,13 +15,13 @@ class MaxRedemptionTransactionMaker extends RedemptionTransactionMaker {
 		return self::DIRECTION_ADJUST;
 	}
 
-	protected function getAdjustedAmount($action, $amount, $current)
+	protected function getMaxAmount($action, $amount, $current)
 	{
 		switch($action)
 		{
 			case self::ACTION_DEPOSIT:
-				if($current >= 2) return $current; // 2 should be coming from config
-				return 2;
+				if($current >= $amount) return $current; // 2 should be coming from config
+				return $amount;
 
 			case self::ACTION_WITHDRAW:
 				return $current - 1;

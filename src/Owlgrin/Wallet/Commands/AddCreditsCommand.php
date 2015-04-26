@@ -4,7 +4,6 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-use Owlgrin\Wallet\Credit\CreditRepo;
 use Owlgrin\Wallet\Exceptions;
 use Wallet;
 
@@ -35,10 +34,9 @@ class AddCreditsCommand extends Command {
 	 * @return void
 	 */
 
-	public function __construct(CreditRepo $creditRepo)
+	public function __construct()
 	{
  		parent::__construct();
- 		$this->creditRepo = $creditRepo;
 	}
 
 	public function fire()
@@ -50,7 +48,7 @@ class AddCreditsCommand extends Command {
 			$user       = $this->argument('user');
 			$credit     = $this->argument('credit');
 
-			Wallet::user($user)->credit($credit, $redemption);
+			Wallet::user($user)->deposit($credit, $redemption);
 
 			$this->info("Your user (". $user .") has been credited with amount (" .$credit. ") with redemptions (" .$redemption. ")");
 		}

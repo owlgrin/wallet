@@ -1,6 +1,7 @@
 <?php namespace Owlgrin\Wallet;
 
 use Illuminate\Support\ServiceProvider;
+use Config;
 
 class WalletServiceProvider extends ServiceProvider {
 
@@ -68,8 +69,16 @@ class WalletServiceProvider extends ServiceProvider {
 		$this->app->bind('Owlgrin\Wallet\Transaction\TransactionRepo', 'Owlgrin\Wallet\Transaction\DbTransactionRepo');
 		$this->app->bind('Owlgrin\Wallet\Wallet\WalletRepo', 'Owlgrin\Wallet\Wallet\DbWalletRepo');
 
-		$this->app->bind('Owlgrin\Wallet\Transaction\RedemptionTransactionMaker', Config::get('wallet::.transactions.redemption'));
-		$this->app->bind('Owlgrin\Wallet\Transaction\AmountTransactionMaker', Config::get('wallet::.transactions.amount'));
+		$this->app->bind('Owlgrin\Wallet\Transaction\RedemptionTransactionMaker', function($app)
+		{
+		   return app($app['config']['wallet::transactions.redemption']);
+		});
+
+		$this->app->bind('Owlgrin\Wallet\Transaction\AmountTransactionMaker', function($app)
+		{
+		   return app($app['config']['wallet::transactions.amount']);
+		});
+
 	}
 
 	/**

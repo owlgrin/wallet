@@ -161,4 +161,10 @@ class Wallet {
 			$coupon['amount'], $coupon['amount_redemptions'], ['type' => 'COUPON', 'id' => $coupon['id']]
 		);
 	}
+
+
+	public function hasApplied($couponIdentifier)
+	{
+		return $this->transactionRepo->hasApplied($this->wallet['id'], $couponIdentifier);
+	}
 }

@@ -7,7 +7,7 @@ class InvalidTransactionException extends Exception {
 	/**
 	 * Message
 	 */
-	const MESSAGE = 'wallet::exception.message.credits_limit_reached';
+	const MESSAGE = 'wallet::exception.message.invalid_transaction';
 
 	/**
 	 * Constructor

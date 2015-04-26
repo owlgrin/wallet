@@ -29,10 +29,10 @@ return array(
 		'user_coupons' => '_wallet_user_coupons'
 	),
 
-	'transactions' = array(
+	'transactions' => array(
 		'redemption' => 'Owlgrin\Wallet\Transaction\MaxRedemptionTransactionMaker',
 		'amount' => 'Owlgrin\Wallet\Transaction\SimpleAmountTransactionMaker'
-	)
+	),
 
 
 	'limit' => 1

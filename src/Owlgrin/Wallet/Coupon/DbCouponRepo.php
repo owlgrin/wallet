@@ -1,6 +1,7 @@
 <?php namespace Owlgrin\Wallet\Coupon;
 
 use Illuminate\Database\DatabaseManager as Database;
+use Owlgrin\Wallet\Exceptions;
 
 use PDOException, Exception, Config;
 

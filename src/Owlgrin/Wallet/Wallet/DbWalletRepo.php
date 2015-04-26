@@ -18,6 +18,7 @@ class DbWalletRepo implements WalletRepo {
 	{
 		try
 		{
+
 			return $this->db->table(Config::get('wallet::tables.wallets'))->insertGetId([
 				'user_id'          => $userId,
 				'amount'          => 0,

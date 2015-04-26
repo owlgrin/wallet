@@ -229,4 +229,22 @@ class DbTransactionRepo implements TransactionRepo {
 			throw new Exceptions\InternalException;
 		}
 	}
+
+	public function hasApplied($walletId, $couponIdentifier)
+	{
+		try
+		{
+			return $this->db->table(Config::get('wallet::tables.transactions') .' as t')
+				->join(Config::get('wallet::tables.coupons').' AS c', 'c.id', '=', 't.trigger_id')
+				->where('c.identifier', $couponIdentifier)
+				->where('t.wallet_id', $walletId)
+				->where('t.trigger_type', 'COUPON')
+				->where('t.type', 'AMOUNT')
+				->count() > 0;
+		}
+		catch(PDOException $e)
+		{
+			throw new Exceptions\InternalException;
+		}
+	}
 }
