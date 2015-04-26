@@ -39,10 +39,10 @@ class AddCouponForUserCommand extends Command {
 
 	public function fire()
 	{
-		$user       = $this->argument('user');
-		$coupon     = $this->argument('coupon');
+		$user             = $this->argument('user');
+		$couponIdentifier = $this->argument('coupon');
 
-		Wallet::user($user)->createCoupon($coupon);
+		Wallet::user($user)->redeemCoupon($couponIdentifier);
 
 		$this->info("Your user (". $user .") has been applied with coupon (" .$coupon. ")");
 	}
