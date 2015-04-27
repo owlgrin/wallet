@@ -57,16 +57,10 @@ class WalletServiceProvider extends ServiceProvider {
 			return $app->make('Owlgrin\Wallet\Commands\AddCouponForUserCommand');
 		});
 
-		$this->app->bindShared('command.wallet.transfer.old.to.new', function($app)
-		{
-			return $app->make('Owlgrin\Wallet\Commands\TransferDataFromOldToNewTablesCommand');
-		});
-
 		$this->commands('command.wallet.table');
 		$this->commands('command.wallet.add.credit');
 		$this->commands('command.wallet.add.coupon');
 		$this->commands('command.wallet.add.coupon.for.user');
-		$this->commands('command.wallet.transfer.old.to.new');
 	}
 
 	protected function registerRepositories()
