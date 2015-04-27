@@ -113,7 +113,7 @@ class Wallet {
 	 * @param  [string] $coupon [identifier of the coupon]
 	 * @return void
 	 */
-	public function deposit($amount, $redemptionLeft, $trigger)
+	public function deposit($amount, $redemptionLeft, $trigger = null)
 	{
 		$trigger = [
 			'type' => array_get($trigger, 'type', 'DEPOSIT'),

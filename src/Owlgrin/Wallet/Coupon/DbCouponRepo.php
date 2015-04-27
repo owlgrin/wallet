@@ -100,11 +100,9 @@ class DbCouponRepo implements CouponRepo {
 
 		try
 		{
-
 			$count = $this->db->table(Config::get('wallet::tables.transactions'))
 				->where('type', self::TYPE_REDEMPTION)
 				->where('trigger_type', 'COUPON')
-				->where('direction', self::DIRECTION_CREDIT)
 				->where('trigger_id', $coupon['id'])
 				->count();
 

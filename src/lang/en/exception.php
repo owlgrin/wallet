@@ -6,6 +6,7 @@ return [
 		'internal_error'			=> 'Something went wrong. It\'s our mistake and we are fixing it',
 		'credits_limit_reached'		=> 'Credits limit has been reached.',
 		'coupon_limit_reached'		=> 'Coupon limit has been reached.',
-		'no_credits'				=> 'You dont have any credits.'
+		'no_credits'				=> 'You dont have any credits.',
+		'invalid_transaction'		=> 'Transaction is invalid'
 	]
 ];

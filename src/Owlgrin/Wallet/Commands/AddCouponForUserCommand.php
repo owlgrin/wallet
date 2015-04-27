@@ -44,7 +44,7 @@ class AddCouponForUserCommand extends Command {
 
 		Wallet::user($user)->redeemCoupon($couponIdentifier);
 
-		$this->info("Your user (". $user .") has been applied with coupon (" .$coupon. ")");
+		$this->info("Your user (". $user .") has been applied with coupon (" .$couponIdentifier. ")");
 	}
 
 	protected function getArguments()

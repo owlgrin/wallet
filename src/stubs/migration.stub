@@ -18,7 +18,7 @@ class CreateWalletTable extends Migration {
 			$table->string('user_id');
 			$table->integer('amount');
 			$table->integer('redemption_limit');
-			$table->timestamp('deleted_at')->nullable();
+			$table->timestamp('deleted_at')->nullable()->default(null);
 			$table->timestamps();
 		});
 
@@ -30,7 +30,7 @@ class CreateWalletTable extends Migration {
 			$table->enum('direction', ['CREDIT', 'DEBIT', 'ADJUST']);
 			$table->enum('type', ['AMOUNT', 'REDEMPTION']);
 			$table->string('trigger_type');
-			$table->integer('trigger_id');
+			$table->integer('trigger_id')->nullable()->default(null);
 			$table->timestamps();
 		});
 
@@ -44,8 +44,8 @@ class CreateWalletTable extends Migration {
 			$table->integer('amount_redemptions');
 			$table->integer('redemptions');
 			$table->timestamp('created_at');
-			$table->timestamp('deleted_at');
-			$table->timestamp('exhausted_at');
+			$table->timestamp('deleted_at')->nullable()->default(null);
+			$table->timestamp('exhausted_at')->nullable()->default(null);
 		});
 
 	}
