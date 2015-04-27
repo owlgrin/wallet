@@ -27,7 +27,7 @@ class CreateWalletTable extends Migration {
 			$table->increments('id');
 			$table->integer('wallet_id');
 			$table->integer('amount');
-			$table->enum('direction', ['CREDIT', 'DEBIT']);
+			$table->enum('direction', ['CREDIT', 'DEBIT', 'ADJUST']);
 			$table->enum('type', ['AMOUNT', 'REDEMPTION']);
 			$table->string('trigger_type');
 			$table->integer('trigger_id');

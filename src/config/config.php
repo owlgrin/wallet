@@ -4,11 +4,6 @@ return array(
 
 	'tables' => array(
 
-		/**
-		 * This table is required to keep track of the
-		 * balances for our users.
-		 */
-		'balances' => '_wallet_balances',
 
 		/**
 		 * This table is required to store all the transactions
@@ -23,10 +18,13 @@ return array(
 		'coupons' => '_wallet_coupons',
 
 		/**
-		 * This table is required to store various coupons given
-		 * to our users
+		 * tracks wallets of the users
 		 */
-		'user_coupons' => '_wallet_user_coupons'
+		'wallets' => '_wallet_wallets',
+
+		'redemptions' => '_wallet_redemptions',
+
+		'credits' => '_wallet_credits'
 	),
 
 	'transactions' => array(
