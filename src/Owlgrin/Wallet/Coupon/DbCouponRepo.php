@@ -33,6 +33,16 @@ class DbCouponRepo implements CouponRepo {
 				'exhausted_at'       => null
 			]);
 		}
+		catch (\Illuminate\Database\QueryException $e)
+		{
+
+		    $errorCode = $e->errorInfo[1];
+
+		    if($errorCode == 1062)
+		    {
+		        throw new Exceptions\CouponExistsException;
+		    }
+		}
 		catch(PDOException $e)
 		{
 			throw new Exceptions\InternalException;
