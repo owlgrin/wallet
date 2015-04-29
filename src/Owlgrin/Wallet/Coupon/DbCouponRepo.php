@@ -70,7 +70,7 @@ class DbCouponRepo implements CouponRepo {
 		{
 			$this->db->table(Config::get('wallet::tables.coupons'))
 				->where('id',  $id)
-				->where('exhausted_at', 'null')
+				->where('exhausted_at', null)
 				->where('redemptions', 0)
 				->update([
 					'exhausted_at' => $this->db->raw('now()')

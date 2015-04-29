@@ -8,6 +8,7 @@ return [
 		'coupon_limit_reached'		=> 'Coupon limit has been reached.',
 		'no_credits'				=> 'You dont have any credits.',
 		'invalid_transaction'		=> 'Transaction is invalid.',
-		'coupon_exists'				=> 'Coupon already exists.'
+		'coupon_exists'				=> 'Coupon already exists.',
+		'empty_wallet'				=> 'Your Wallet is empty.'
 	]
 ];

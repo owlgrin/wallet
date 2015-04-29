@@ -36,7 +36,7 @@ class Wallet {
 		$this->user = $user;
 		$this->wallet = $this->walletRepo->findByUser($user);
 
-		if(is_null($this->wallet)) throw new Exceptions\WalletNotCreated;
+		if(is_null($this->wallet)) throw new Exceptions\WalletNotCreatedException;
 
 		return $this;
 	}
