@@ -46,7 +46,7 @@ class AddCreditsCommand extends Command {
 			$credit     = $this->argument('credit');
 			$redemption = $this->argument('redemption');
 
-			Wallet::user($user)->credit($credit, $redemption);
+			Wallet::user($user)->deposit($credit, $redemption);
 
 			$this->info("Your user (". $user .") has been credited with amount (" .$credit. ") with redemptions (" .$redemption. ")");
 		}

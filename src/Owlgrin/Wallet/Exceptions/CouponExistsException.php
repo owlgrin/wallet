@@ -2,12 +2,12 @@
 
 use Illuminate\Support\MessageBag;
 
-class NoCreditsException extends Exception {
+class CouponExistsException extends Exception {
 
 	/**
 	 * Message
 	 */
-	const MESSAGE = 'wallet::exception.message.no_credits';
+	const MESSAGE = 'wallet::exception.message.coupon_exists';
 
 	/**
 	 * Constructor

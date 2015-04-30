@@ -65,7 +65,7 @@ class AddCouponCommand extends Command {
 	{
 		if ($this->confirm('Do you wish to add coupon to database ? [yes|no]'))
 		{
-			$this->couponRepo->addMultiple($coupons);
+			$this->couponRepo->createMultiple($coupons);
 
 			$this->info('Coupons Added Successfully');
 		}
@@ -83,6 +83,8 @@ class AddCouponCommand extends Command {
 			$coupon['coupons'][$i]['identifier'] = $this->ask('What is the identifier of the coupon ?');
 
 			$coupon['coupons'][$i]['amount'] = $this->ask('What is the amount of the coupon?');
+
+			$coupon['coupons'][$i]['description'] = $this->ask('Give me some discription?');
 
 			$coupon['coupons'][$i]['amount_redemptions'] = $this->ask('How many times this amount can be redeemed ?');
 

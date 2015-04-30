@@ -4,7 +4,6 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 
-use Owlgrin\Wallet\Coupon\CouponRepo;
 use Owlgrin\Wallet\Exceptions;
 use Wallet;
 
@@ -27,28 +26,25 @@ class AddCouponForUserCommand extends Command {
 	 */
 	protected $description = 'This command adds coupons to the user.';
 
-	protected $couponRepo;
-
 	/**
 	 * Execute the console command.
 	 *
 	 * @return void
 	 */
 
-	public function __construct(CouponRepo $couponRepo)
+	public function __construct()
 	{
  		parent::__construct();
- 		$this->couponRepo = $couponRepo;
 	}
 
 	public function fire()
 	{
-		$user       = $this->argument('user');
-		$coupon     = $this->argument('coupon');
+		$user             = $this->argument('user');
+		$couponIdentifier = $this->argument('coupon');
 
-		Wallet::user($user)->coupon($coupon);
+		Wallet::user($user)->redeemCoupon($couponIdentifier);
 
-		$this->info("Your user (". $user .") has been applied with coupon (" .$coupon. ")");
+		$this->info("Your user (". $user .") has been applied with coupon (" .$couponIdentifier. ")");
 	}
 
 	protected function getArguments()
