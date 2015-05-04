@@ -88,7 +88,7 @@ class Wallet {
 	public function redeem($amount)
 	{
 		return $this->transactionRepo->withdraw(
-			$this->wallet['id'], $amount, ['type' => 'REDEMPTION']
+			$this->wallet['id'], $amount, ['type' => 'REDEMPTION', 'id' => null]
 		);
 	}
 
