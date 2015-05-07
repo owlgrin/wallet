@@ -84,6 +84,8 @@ class DbTransactionRepo implements TransactionRepo {
 			$this->updateWallet($wallet, $transactions);
 
 			$this->db->commit();
+
+			return $amountRedeemed;
 		}
 		catch(Exceptions\InternalException $e)
 		{
