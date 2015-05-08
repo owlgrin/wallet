@@ -88,7 +88,7 @@ class Wallet {
 	public function redeem($amount)
 	{
 		return $this->transactionRepo->withdraw(
-			$this->wallet['id'], $amount, ['type' => 'REDEMPTION']
+			$this->wallet['id'], $amount, ['type' => 'REDEMPTION', 'id' => null]
 		);
 	}
 
@@ -113,7 +113,7 @@ class Wallet {
 	 * @param  [string] $coupon [identifier of the coupon]
 	 * @return void
 	 */
-	public function deposit($amount, $redemptionLeft, $trigger = null)
+	public function deposit($amount = 0, $redemptionLeft = 0, $trigger = null)
 	{
 		$trigger = [
 			'type' => array_get($trigger, 'type', 'DEPOSIT'),

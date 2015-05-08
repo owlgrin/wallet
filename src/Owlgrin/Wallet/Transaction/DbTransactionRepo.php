@@ -69,7 +69,7 @@ class DbTransactionRepo implements TransactionRepo {
 			$this->db->beginTransaction();
 
 			$wallet = $this->walletRepo->find($walletId);
-			$amountRedeemed = $this->calculateRedemption($amount, $wallet['amount']);
+			$amountRedeemed = $this->calculateRedemption($amount, $wallet['amount'], $wallet['redemption_limit']);
 
 			$transactions = [];
 			if($amountRedeemed > 0)
@@ -84,6 +84,8 @@ class DbTransactionRepo implements TransactionRepo {
 			$this->updateWallet($wallet, $transactions);
 
 			$this->db->commit();
+
+			return $amountRedeemed;
 		}
 		catch(Exceptions\InternalException $e)
 		{
@@ -93,9 +95,9 @@ class DbTransactionRepo implements TransactionRepo {
 		}
 	}
 
-	private function calculateRedemption($requestedAmount, $walletAmount)
+	private function calculateRedemption($requestedAmount, $walletAmount, $redemptionLimit)
 	{
-		if($walletAmount === 0)
+		if($walletAmount == 0 or $redemptionLimit == 0)
 		{
 			throw new Exceptions\EmptyWalletException;
 		}
