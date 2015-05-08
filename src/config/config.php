@@ -32,7 +32,4 @@ return array(
 		'amount' => 'Owlgrin\Wallet\Transaction\SimpleAmountTransactionMaker'
 	),
 
-
-	'limit' => 1
-
 );
